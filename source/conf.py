@@ -33,8 +33,8 @@ extensions = [
     'sphinx.ext.pngmath',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
+    'sphinxcontrib.bibtex',
 ]
-
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -73,6 +73,7 @@ release = '0.0.1'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 exclude_patterns = []
+exclude_trees = ['_build']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
