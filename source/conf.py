@@ -33,8 +33,8 @@ extensions = [
     'sphinx.ext.pngmath',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    'sphinxcontrib.bibtex',
 ]
+##     'sphinxcontrib.bibtex'
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
