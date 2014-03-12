@@ -14,24 +14,21 @@ Hopefully this book would build a bridge between biologists and geeky computatio
 
 Book source at Github: https://github.com/Puriney/ManualCLIP 
 
-Contents
-==================
+**Contents**
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    c00intro.rst
    c10anlyzRBP.rst
    c20mdlPrdict.rst
    c30pipeline.rst
 
-License
-=================
+**License**
 
 This book is licensed under a `Creative Commons Attribution-NonCommercial-ShareAlike 3.0 United States License. <http://creativecommons.org/licenses/by-nc-sa/3.0/us/>`_
 
-Indices and tables
-==================
+**Indices and tables**
 
 * :ref:`genindex`
 * :ref:`modindex`

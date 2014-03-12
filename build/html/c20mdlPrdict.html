@@ -49,7 +49,10 @@
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Model and Predict RBP Binding Preference</a><ul>
-<li><a class="reference internal" href="#hmm">HMM</a></li>
+<li><a class="reference internal" href="#hidden-markov-model">Hidden Markov Model</a><ul>
+<li><a class="reference internal" href="#toy-model-hmm-and-splicing-site-recognition">Toy model: HMM and Splicing Site Recognition</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#svm">SVM</a></li>
 <li><a class="reference internal" href="#graph-kernel">Graph Kernel</a></li>
 <li><a class="reference internal" href="#random-forest">Random Forest</a></li>
@@ -91,8 +94,21 @@
             
   <div class="section" id="model-and-predict-rbp-binding-preference">
 <h1>Model and Predict RBP Binding Preference<a class="headerlink" href="#model-and-predict-rbp-binding-preference" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="hmm">
-<h2>HMM<a class="headerlink" href="#hmm" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="hidden-markov-model">
+<h2>Hidden Markov Model<a class="headerlink" href="#hidden-markov-model" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="toy-model-hmm-and-splicing-site-recognition">
+<h3>Toy model: HMM and Splicing Site Recognition<a class="headerlink" href="#toy-model-hmm-and-splicing-site-recognition" title="Permalink to this headline">¶</a></h3>
+<p>In this section I would like to introduce a toy application of HMM: splicing site recognition which is a paper from Sean R Eddy so that you will not get confused by the literal definitions. Moreover, you will actually learn how to hack around HMM since I would provide <cite>R</cite> code to reproduce his paper&#8217;s results.</p>
+<p>Our mission is to locate the most possible 5&#8217;-end splicing site given a DNA string. What we have clearly known so far are two things. One is the raw sequence you have observed, <cite>CTTCATGTGAAAGCAGACGTAAGTCA</cite> for example. The other is the fact that sequence comprises of three categories of nucleotides: exon, intron, splicing site.</p>
+<p>We also know the distribution of the <cite>A</cite>, <cite>C</cite>, <cite>G</cite> and <cite>T</cite> is different among exons, introns and splicing site. Though the composition would be estimated from the genome annotations, let&#8217;s just set them as followed:</p>
+<ul class="simple">
+<li>Exon: uniform base composition on average, 0.25 each base;</li>
+<li>Intron: A and T are 0.4 each, G and C are 0.1 each;</li>
+<li>5&#8217;ss : A is 0.05, G is 0.95, others are zero.</li>
+</ul>
+<a class="reference internal image-reference" href="_images/HMMandSplicingSite.png"><img alt="_images/HMMandSplicingSite.png" class="align-center" src="_images/HMMandSplicingSite.png" /></a>
+<p>(img credit: Sean R Eddy)</p>
+</div>
 </div>
 <div class="section" id="svm">
 <h2>SVM<a class="headerlink" href="#svm" title="Permalink to this headline">¶</a></h2>
