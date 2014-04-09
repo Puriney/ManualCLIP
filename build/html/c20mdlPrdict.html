@@ -50,12 +50,21 @@
   <ul>
 <li><a class="reference internal" href="#">Model and Predict RBP Binding Preference</a><ul>
 <li><a class="reference internal" href="#hidden-markov-model">Hidden Markov Model</a><ul>
-<li><a class="reference internal" href="#toy-model-hmm-and-splicing-site-recognition">Toy model: HMM and Splicing Site Recognition</a></li>
+<li><a class="reference internal" href="#sequence-path-v-s-state-path">Sequence Path v.s. State Path</a></li>
+<li><a class="reference internal" href="#why-hidden">Why Hidden?</a></li>
+<li><a class="reference internal" href="#think-in-hmm">Think in HMM</a><ul>
+<li><a class="reference internal" href="#emission-probs">Emission Probs</a></li>
+<li><a class="reference internal" href="#transition-probs">Transition Probs</a></li>
+<li><a class="reference internal" href="#generate-sequence">Generate sequence</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#svm">SVM</a></li>
 <li><a class="reference internal" href="#graph-kernel">Graph Kernel</a></li>
 <li><a class="reference internal" href="#random-forest">Random Forest</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#source-scripts">Source Scripts</a></li>
 </ul>
 </li>
 </ul>
@@ -96,18 +105,95 @@
 <h1>Model and Predict RBP Binding Preference<a class="headerlink" href="#model-and-predict-rbp-binding-preference" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="hidden-markov-model">
 <h2>Hidden Markov Model<a class="headerlink" href="#hidden-markov-model" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="toy-model-hmm-and-splicing-site-recognition">
-<h3>Toy model: HMM and Splicing Site Recognition<a class="headerlink" href="#toy-model-hmm-and-splicing-site-recognition" title="Permalink to this headline">¶</a></h3>
-<p>In this section I would like to introduce a toy application of HMM: splicing site recognition which is a paper from Sean R Eddy so that you will not get confused by the literal definitions. Moreover, you will actually learn how to hack around HMM since I would provide <cite>R</cite> code to reproduce his paper&#8217;s results.</p>
-<p>Our mission is to locate the most possible 5&#8217;-end splicing site given a DNA string. What we have clearly known so far are two things. One is the raw sequence you have observed, <cite>CTTCATGTGAAAGCAGACGTAAGTCA</cite> for example. The other is the fact that sequence comprises of three categories of nucleotides: exon, intron, splicing site.</p>
-<p>We also know the distribution of the <cite>A</cite>, <cite>C</cite>, <cite>G</cite> and <cite>T</cite> is different among exons, introns and splicing site. Though the composition would be estimated from the genome annotations, let&#8217;s just set them as followed:</p>
+<p>In the beginning of this section I would like to introduce HMM by a toy application: 5&#8217; end splicing site recognition, which was originated from NBT paper <a class="reference internal" href="#eddy2004" id="id1">[Eddy2004]</a>. Admittedly this toy HMM is naive, it hopefully could help you take first step knowing how to infer the most possible splicing site, simply starting from raw DNA/RNA sequence together with some prior knowledges. For now we begin with the sequence: <em>CTTCATGTGAAAGCAGACGTAAGTCA</em>. Series of ideas and concepts would be illustrated step by step so that you could see how the biological question was translated to mathematical questions. Hopefully after you have known HMM I would introduce how HMM was employed in RBP science researches.</p>
+<div class="section" id="sequence-path-v-s-state-path">
+<h3>Sequence Path v.s. State Path<a class="headerlink" href="#sequence-path-v-s-state-path" title="Permalink to this headline">¶</a></h3>
+<p>Sequence could be read by sequencing and thus observed. Each nucleotide residing on the DNA string belongs to some bio-functional regions. They are exons to be transcribed in the mature RNA, introns to be spliced out and splicing site, the boundary of exon and intron. These regions of different functions could be described as different states.</p>
+<p>Four basic types of nucleotides (A, T, C, G) come together to form a sequence path. Likewise, the state path is composed of &#8220;E&#8221;, &#8220;I&#8221;, and &#8220;5&#8221;, denoting &#8220;Exon&#8221;, &#8220;Intron&#8221; and &#8220;5&#8217;-end Splicing Site&#8221; respectively. For convenience we disregard 3&#8217; end splicing sites here.</p>
+<p>For example:</p>
+<div class="highlight-python"><div class="highlight"><pre>Sequence Path: CTTCATGTGAAAGCAGACGTAAGTCA
+State    Path: EEEEEEEEEEEEEEEEEE5IIIIIII
+</pre></div>
+</div>
+<p>Therefore the ultimate goal of locating the splicing site is to figure out the state of each nucleotide and find the one under splicing site state. Generally speaking, given the sequence path we try to infer the state path.</p>
+</div>
+<div class="section" id="why-hidden">
+<h3>Why Hidden?<a class="headerlink" href="#why-hidden" title="Permalink to this headline">¶</a></h3>
+<p>At first sight whether GC-rich or AT-rich of a DNA string could be quickly determined given the sequence path, however you could barely say the state path immediately. This is where the &#8220;hidden&#8221; comes from.</p>
+<p>The observed sequence path alone cannot help us to reveal the unobserved state path. With additional prior knowledge, for example, the distribution of A/T/G/C in each state, we could unveil the most possible E/I/5 state path in a <strong>top-bottom</strong> fashion.</p>
+</div>
+<div class="section" id="think-in-hmm">
+<h3>Think in HMM<a class="headerlink" href="#think-in-hmm" title="Permalink to this headline">¶</a></h3>
+<p>Suppose we have understood the unknown dark matter in the bottom and all the prior knowledge. Let&#8217;s think in HMM to generate a DNA sequence in <strong>bottom-up</strong> fashion. Oh, calm down, just playing roulette wheel.</p>
+<div class="section" id="emission-probs">
+<h4>Emission Probs<a class="headerlink" href="#emission-probs" title="Permalink to this headline">¶</a></h4>
+<p>Let&#8217;s play with intron state and under intron state we set the bases distribution as:</p>
+<div class="highlight-python"><div class="highlight"><pre>    A   C   G   T
+I 0.4 0.1 0.1 0.4
+</pre></div>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/c20HMM_Emission_Prob1.png"><img alt="_images/c20HMM_Emission_Prob1.png" src="_images/c20HMM_Emission_Prob1.png" style="width: 600px;" /></a>
+<p class="caption">Distribution of A, C, G, T in toy intron. <em>(See R scripts to generate pie chart in final section in case of your curiosity)</em></p>
+</div>
+<p>The <strong>emission probabilities</strong> under intron state could be described as the above roulette wheel. To generate a DNA string given the emission probabilities of intron, it is straightforward to implement sampling intron sequence of 26nt using <tt class="docutils literal"><span class="pre">R</span></tt> language:</p>
+<div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> set.seed<span class="p">(</span><span class="m">1026</span><span class="p">)</span>
+<span class="o">&gt;</span> dna.bases <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span> <span class="s">&quot;C&quot;</span><span class="p">,</span> <span class="s">&quot;G&quot;</span><span class="p">,</span> <span class="s">&quot;T&quot;</span><span class="p">)</span>
+<span class="o">&gt;</span> intron.emission.prob <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0.40</span><span class="p">,</span> <span class="m">0.10</span><span class="p">,</span> <span class="m">0.10</span><span class="p">,</span> <span class="m">0.40</span><span class="p">)</span>
+<span class="o">&gt;</span> seq.len <span class="o">&lt;-</span> <span class="m">26</span>
+<span class="o">&gt;</span> sample.seq <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> dna.bases<span class="p">,</span> prob <span class="o">=</span> intron.emission.prob<span class="p">,</span> size <span class="o">=</span> seq.len<span class="p">,</span> replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
+<span class="o">&gt;</span> cat<span class="p">(</span>sample.seq<span class="p">,</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
+<span class="o">&gt;</span> table<span class="p">(</span>sample.seq<span class="p">)</span>
+A C A G A A A A A A A <span class="k-Variable">T</span> G A <span class="k-Variable">T</span> A A A C A G G G A A <span class="k-Variable">T</span>
+</pre></div>
+</div>
+<p>You could even double-check whether this string follow your prior set distribution. I give you result of 1000nt sequence by setting <tt class="docutils literal"><span class="pre">seq.len</span> <span class="pre">&lt;-</span> <span class="pre">1000</span></tt> without changing other codes:</p>
+<div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> table<span class="p">(</span>sample.seq<span class="p">)</span>
+sample.seq
+  A   C   G   <span class="k-Variable">T</span>
+<span class="m">396</span>  <span class="m">81</span> <span class="m">101</span> <span class="m">422</span>
+</pre></div>
+</div>
+<p>Emission probabilities of each state is dedicated to generate observed base. Don&#8217;t forget we assume we are HMM now. If we clearly know state status of each base, we could immediately sample its nucleotide given the emission probabilities. Previously we set <tt class="docutils literal"><span class="pre">seq.len</span></tt> as <tt class="docutils literal"><span class="pre">26</span></tt> or <tt class="docutils literal"><span class="pre">1000</span></tt> to generate sequence of corresponding length. In the same way, we could give the individual base a nucleotide by setting <tt class="docutils literal"><span class="pre">seq.len</span> <span class="pre">&lt;-</span> <span class="pre">1</span></tt>.</p>
+<p>This story under intron state could be exactly applied to exon, splicing sites states as well. Thus we have three wheels of emission probabilities under three different states.</p>
+</div>
+<div class="section" id="transition-probs">
+<h4>Transition Probs<a class="headerlink" href="#transition-probs" title="Permalink to this headline">¶</a></h4>
+<p>HMM has a feature: the next state is determined by ongoing state, or ongoing state is determined by previous one. For example, now we know we are under &#8220;Exon&#8221; state. When we considering generating next one, we are hesitating between whether continuing &#8220;Exon&#8221;, or changing to &#8220;Splicing Site&#8221; state. Moving from one state to another state is exactly determined by transition probabilities.</p>
+<p>Though emission and transition probabilities have different biological missions: generating sequence and state path respectively. Their mathematical principle are exactly same - sampling something following multinomial model.</p>
+<p>Let&#8217;s assume exon status has the following transition probabilities:</p>
+<div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> state.bases <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;E&quot;</span><span class="p">,</span> <span class="s">&quot;5&quot;</span><span class="p">,</span> <span class="s">&quot;I&quot;</span><span class="p">)</span>
+<span class="o">&gt;</span> exon.transition.prob <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0.9</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
+<span class="o">&gt;</span> exon.transition.matrix <span class="o">&lt;-</span> matrix<span class="p">(</span>exon.transition.prob<span class="p">,</span> nrow <span class="o">=</span> <span class="m">1</span><span class="p">,</span> byrow <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
+<span class="o">&gt;</span> colnames<span class="p">(</span>exon.transition.matrix<span class="p">)</span> <span class="o">&lt;-</span> state.bases
+<span class="o">&gt;</span> row.names<span class="p">(</span>exon.transition.matrix<span class="p">)</span> <span class="o">&lt;-</span> <span class="s">&quot;E&quot;</span>
+<span class="o">&gt;</span> print<span class="p">(</span>exon.transition.matrix<span class="p">)</span>
+    E   <span class="m">5</span> I
+E <span class="m">0.9</span> <span class="m">0.1</span> <span class="m">0</span>
+</pre></div>
+</div>
+<p>It means the probability of continuing exon state is 0.9 whereas changing to 5&#8217; end splicing site state is 0.1. Note that in our toy model exon cannot directly jump to intron state.</p>
+<p>You cannot be unfamiliar with the following codes to choose state for next base:</p>
+<div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> set.seed<span class="p">(</span><span class="m">1026</span><span class="p">)</span>
+<span class="o">&gt;</span> sample.state <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> state.bases<span class="p">,</span> prob <span class="o">=</span> exon.transition.prob<span class="p">,</span> size <span class="o">=</span> <span class="m">1</span><span class="p">,</span> replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
+<span class="o">&gt;</span> cat<span class="p">(</span>sample.state<span class="p">)</span>
+E
+</pre></div>
+</div>
+</div>
+<div class="section" id="generate-sequence">
+<h4>Generate sequence<a class="headerlink" href="#generate-sequence" title="Permalink to this headline">¶</a></h4>
+<p>So far hopefully you clear have learned:</p>
 <ul class="simple">
-<li>Exon: uniform base composition on average, 0.25 each base;</li>
-<li>Intron: A and T are 0.4 each, G and C are 0.1 each;</li>
-<li>5&#8217;ss : A is 0.05, G is 0.95, others are zero.</li>
+<li>Generating sequence path purely under intron state</li>
+<li>Determine state of next base when current base is under exon state</li>
 </ul>
-<a class="reference internal image-reference" href="_images/HMMandSplicingSite.png"><img alt="_images/HMMandSplicingSite.png" class="align-center" src="_images/HMMandSplicingSite.png" /></a>
+<p>Next we need make the emission and transition probabilities to the full story:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/HMMandSplicingSite_Mx.png"><img alt="_images/HMMandSplicingSite_Mx.png" src="_images/HMMandSplicingSite_Mx.png" /></a>
+</div>
 <p>(img credit: Sean R Eddy)</p>
+</div>
 </div>
 </div>
 <div class="section" id="svm">
@@ -118,6 +204,62 @@
 </div>
 <div class="section" id="random-forest">
 <h2>Random Forest<a class="headerlink" href="#random-forest" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<table class="docutils citation" frame="void" id="eddy2004" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[Eddy2004]</a></td><td>Eddy, S. R. What is a hidden Markov model? Nat. Biotechnol. 22, 1315–1316 (2004).</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="source-scripts">
+<h2>Source Scripts<a class="headerlink" href="#source-scripts" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-r"><div class="highlight"><pre>library<span class="p">(</span>ggplot2<span class="p">)</span>
+library<span class="p">(</span>xkcd<span class="p">)</span>
+dna.bases <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span> <span class="s">&quot;C&quot;</span><span class="p">,</span> <span class="s">&quot;G&quot;</span><span class="p">,</span> <span class="s">&quot;T&quot;</span><span class="p">)</span>
+seq.path <span class="o">&lt;-</span> <span class="s">&quot;CTTCATGTGAAAGCAGACGTAAGTCA&quot;</span>
+
+<span class="c1">## ----------------------------</span>
+<span class="c1">## Emission Prob Demo (Intron)</span>
+<span class="c1">## ----------------------------</span>
+<span class="c1">## Pre-settings</span>
+intron.emission.prob <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0.40</span><span class="p">,</span> <span class="m">0.10</span><span class="p">,</span> <span class="m">0.10</span><span class="p">,</span> <span class="m">0.40</span><span class="p">)</span>
+intron.emmision.matrix <span class="o">&lt;-</span> matrix<span class="p">(</span>intron.emission.prob<span class="p">,</span> nrow <span class="o">=</span> <span class="m">1</span><span class="p">,</span> byrow <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
+colnames<span class="p">(</span>intron.emmision.matrix<span class="p">)</span> <span class="o">&lt;-</span> dna.bases
+row.names<span class="p">(</span>intron.emmision.matrix<span class="p">)</span> <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;I&quot;</span><span class="p">)</span>
+<span class="c1">## Plot wheel of intron</span>
+intron.emmision.prob2 <span class="o">&lt;-</span> data.frame<span class="p">(</span>Base <span class="o">=</span> paste<span class="p">(</span>dna.bases<span class="p">,</span> as.character<span class="p">(</span>intron.emission.prob<span class="p">),</span> sep<span class="o">=</span><span class="s">&quot;=&quot;</span><span class="p">),</span> Prob <span class="o">=</span> intron.emission.prob<span class="p">)</span>
+p <span class="o">&lt;-</span> ggplot<span class="p">(</span>intron.emmision.prob2<span class="p">,</span> aes<span class="p">(</span>x<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> y<span class="o">=</span>Prob<span class="p">,</span> fill <span class="o">=</span> Base<span class="p">))</span> <span class="o">+</span> 
+        geom_bar<span class="p">(</span>width <span class="o">=</span> <span class="m">3</span><span class="p">)</span> <span class="o">+</span> 
+        coord_polar<span class="p">(</span><span class="s">&quot;y&quot;</span><span class="p">)</span> <span class="o">+</span> 
+        xlab<span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> ylab<span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> ggtitle<span class="p">(</span><span class="s">&#39;Intron Roulette Wheel&#39;</span><span class="p">)</span> <span class="o">+</span> labs<span class="p">(</span>fill<span class="o">=</span><span class="s">&quot;Base&quot;</span><span class="p">)</span> <span class="o">+</span> 
+        opts<span class="p">(</span>axis.ticks<span class="o">=</span>theme_blank<span class="p">())</span>
+p 
+<span class="c1">## Sample bases</span>
+set.seed<span class="p">(</span><span class="m">1026</span><span class="p">)</span>
+seq.len <span class="o">&lt;-</span> <span class="m">26</span>
+sample.seq <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> dna.bases<span class="p">,</span> prob <span class="o">=</span> intron.emission.prob<span class="p">,</span>
+                     size <span class="o">=</span> seq.len<span class="p">,</span> replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
+cat<span class="p">(</span>sample.seq<span class="p">,</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
+table<span class="p">(</span>sample.seq<span class="p">)</span>
+
+<span class="c1">## ----------------------------</span>
+<span class="c1">## Transition Prob Demo</span>
+<span class="c1">## ----------------------------</span>
+state.bases <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;E&quot;</span><span class="p">,</span> <span class="s">&quot;5&quot;</span><span class="p">,</span> <span class="s">&quot;I&quot;</span><span class="p">)</span>
+exon.transition.prob <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0.9</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
+exon.transition.matrix <span class="o">&lt;-</span> matrix<span class="p">(</span>exon.transition.prob<span class="p">,</span> nrow <span class="o">=</span> <span class="m">1</span><span class="p">,</span> byrow <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
+colnames<span class="p">(</span>exon.transition.matrix<span class="p">)</span> <span class="o">&lt;-</span> state.bases
+row.names<span class="p">(</span>exon.transition.matrix<span class="p">)</span> <span class="o">&lt;-</span> <span class="s">&quot;E&quot;</span>
+print<span class="p">(</span>exon.transition.matrix<span class="p">)</span>
+set.seed<span class="p">(</span><span class="m">1026</span><span class="p">)</span>
+sample.state <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> state.bases<span class="p">,</span> prob <span class="o">=</span> exon.transition.prob<span class="p">,</span>
+                       size <span class="o">=</span> <span class="m">1</span><span class="p">,</span> replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
+cat<span class="p">(</span>sample.state<span class="p">)</span>
+</pre></div>
+</div>
 </div>
 </div>
 
