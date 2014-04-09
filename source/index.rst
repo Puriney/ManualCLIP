@@ -28,6 +28,10 @@ Book source at Github: https://github.com/Puriney/ManualCLIP
 
 This book is licensed under a `Creative Commons Attribution-NonCommercial-ShareAlike 3.0 United States License. <http://creativecommons.org/licenses/by-nc-sa/3.0/us/>`_
 
+**Logs**
+
+- Apr 9 2014. Working on HMM introduction. So far "generat sequence". 
+
 **Indices and tables**
 
 * :ref:`genindex`
