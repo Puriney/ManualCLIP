@@ -49,7 +49,6 @@ cat(sample.state)
 ## -----------------------------
 ## Generating sequence
 ## -----------------------------
-
 ## Construct transition matrix
 S <- c(0,1,rep(0,3))
 E <- c(0, 0.9, 0.1, 0, 0)
@@ -97,4 +96,61 @@ GenerateHMMSeq <- function(emmisionMx, transitionMx, len){
     cat("Seq Path:", na.omit(out.seq.path), "\n")
     cat("StatPath:", na.omit(out.state.path), "\n")
     return(1)
+}
+
+## --------------------------
+## Compute Prob of state path
+## --------------------------
+ComputeStatePathProb <- function(seqPath, statePath, transMtx, emisMtx, log=TRUE){
+    seqPath <- unlist(strsplit(toupper(seqPath), ""))
+    statePath <- unlist(strsplit(statePath, ""))
+    statePath[statePath=="5"] <- "SS5"
+    ## First base
+    ## previous is under Start State
+    prob <-  transMtx["S", statePath[1]] * emisMtx[statePath[1], seqPath[1]]
+    for (i in 2:length(seqPath)){
+        state.i <- statePath[i]
+        nucleotide.i <- seqPath[i]
+        prob.i <- transMtx[statePath[i-1],state.i] * emisMtx[statePath[i], nucleotide.i]
+        prob <- prob * prob.i
+    }
+    ## End State
+    prob <- prob * transMtx[statePath[length(statePath)], "N"]
+    if (log){
+        return (log2(prob)/log2(exp(1))) 
+    } else {
+        return (prob)
+    }
+}
+
+## --------------------------------------
+## Force Compute Most Possible State Path
+## --------------------------------------
+InspectorHMM <- function(seqPath, transMtx, emisMtx ){
+    sumProb <- 0
+    allPath <- NULL
+    allProb <- NULL
+    print ("All State Path with non-zero Probability: ")
+    for (i in 1:24) {
+        path_i <- c(rep("E", i), "5", rep("I", 25-i))
+        path_i <- paste(path_i, collapse="")
+        allPath[i] <- path_i
+        
+        p <- computeProb(seqPath, path_i,transMtx, emisMtx,log=FALSE)
+        allProb[i] <- p 
+        if (p != 0){
+            print (path_i)
+            print (p)
+            sumProb <- sumProb + p 
+        }
+    }
+    maxProb <- max(allProb, na.rm=TRUE)
+    max <- which(allProb == maxProb)
+    cat ("Best State Path and original Sequence", "\n")
+    cat (allPath[max], "\n")
+    cat (seqPath,"\n")
+    cat (paste("Maximum Probability: ", maxProb, sep=""),"\n")
+    cat (paste("Maximum Prob (log):  ", log2(maxProb)/log2(exp(1)), sep=""),"\n")
+    cat (paste("Posterior Decoding:  ", maxProb/sumProb, sep=""),"\n")
+    return (allPath[max])
 }

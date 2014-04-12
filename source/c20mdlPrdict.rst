@@ -114,8 +114,8 @@ Generate sequence
 
 So far hopefully you clear have learned: 
 	
-- Generating sequence path purely under intron state
-- Determine state of next base when current base is under exon state
+- Generating sequence path purely under one state, i.e. intron
+- Determine state of next base when current base is under certain state, i.e. exon
 
 Next before generating sequences and of course state path we need make the emission and transition probabilities to the full story: 
 
@@ -126,7 +126,7 @@ Next before generating sequences and of course state path we need make the emiss
 
 	Diagram showing emission and transition probabilities matrix [Eddy2004]_. 
 
-In particular there are additional "Start" and "End" states for model purpose. These two states have no base assignment and they serve as the ``^`` and ``$`` in the regular expression in programming. In the figure the transition probability from "Start" to "Exon" state is ``1.0`` which means in our toy example here we are going to generate sequence starting with "Exon" and ending by "Intron". 
+In particular there are additional "Start" and "End" states for model purpose. These two states have no base assignment and they serve as the ``^`` and ``$`` in the regular expression in programming. In the figure the transition probability from "Start" to "Exon" state is ``1.0`` which means in our toy example here we are going to generate sequence starting with "Exon". Likewise the probability of continuing "Intron" is ``0.9``. 
 
 The full emission probabilities matrix would be: 
 
@@ -176,6 +176,95 @@ Check the source R script to find ``GenerateHMMSeq`` function. After you type th
 	Seq Path: A A C G G T C C C G G A T T T 
 	StatPath: E E E E E E E E E SS5 I I I I I N 
 	[1] 1
+
+You may noticed that in this case the length of output sequence is 15 though 20 is pre-defined. Is it wrong? No, because the probability of changing from "Intron" to "End" state is ``0.1``, not ``0``, Ongoing "Intron" state is possible to choose "End" state for next base. 
+
+Judge Possible State Path
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+So far hopefully you have known how to think in HMM to generate sequence path and state path given the transition and emission probabilities matrix available. Now back to our original goal: locating 5'-end splicing site. Now out mind goes in **top-bottom** direction and our mission is to find the state path with highest probabilities given the observed sequence path. 
+
+Compute Probability of State Path
+"""""""""""""""""""""""""""""""""
+
+Recall our example: 
+
+.. code-block:: bash
+
+	Sequence Path: CTTCATGTGAAAGCAGACGTAAGTCA
+	State    Path: EEEEEEEEEEEEEEEEEE5IIIIIII
+
+Given the observed sequence of 26nt, how likely do you think is the state path among the hundreds of combinations? In general :math:`{\mathbf P}\left(\mathbf{s},\pi \mid \text{HMM},\theta\right)` of an Hidden Marcov Model with parameters ( :math:`\theta` ) generates a state path ( :math:`\pi` ) and an observed sequence ( :math:`\mathbf{s}` ) , is the product of all the emission probabilities and transition probabilities that were used: 
+
+.. math::
+	
+	\left( 0.25^{18} * 0.95 * 0.4^3 * 0.1 * 0.1 * 0.4^2 \right) * \left(1 * 0.9^{17} * 0.1 * 1 * 0.9^6 * 0.1 \right)
+
+26nt sequence has 26 emissions and 27 transitions (note the final end state).
+
+See ``ComputeStatePathProb`` function for details and it could yield: 
+.. code-block:: r
+	> demo.seq.path <- c("CTTCATGTGAAAGCAGACGTAAGTCA")
+	> demo.state.path <- c("EEEEEEEEEEEEEEEEEE5IIIIIII")
+	> ComputeStatePathProb(seqPath = demo.seq.path, statePath = demo.state.path, 
+	                     transMtx = myTransMtx, emisMtx = myEmisMtx, log = TRUE)
+	[1] -41.21968
+
+Enumerate State Paths 
+""""""""""""""""""""""""
+
+.. figure:: _static/HMMandSplicingSite.png
+	:scale: 50 %
+	:align: center
+
+	Most possible state path. 
+
+Among all the possible combinations of state path, how to pick up the most possible state path? There is one naive way: enumerate all the candidates, compute their probability, and pick up the highest one. 
+
+.. code-block:: r
+
+	> InspectorHMM(demo.seq.path, myTransMtx, myEmisMtx)
+	[1] "All State Path with non-zero Probability: "
+	[1] "EEEE5IIIIIIIIIIIIIIIIIIIII"
+	[1] 2.904208e-21
+	[1] "EEEEEE5IIIIIIIIIIIIIIIIIII"
+	[1] 8.621866e-20
+	[1] "EEEEEEEE5IIIIIIIIIIIIIIIII"
+	[1] 1.347167e-19
+	[1] "EEEEEEEEE5IIIIIIIIIIIIIIII"
+	[1] 4.431469e-21
+	[1] "EEEEEEEEEE5IIIIIIIIIIIIIII"
+	[1] 2.769668e-21
+	[1] "EEEEEEEEEEE5IIIIIIIIIIIIII"
+	[1] 1.731043e-21
+	[1] "EEEEEEEEEEEE5IIIIIIIIIIIII"
+	[1] 8.222452e-20
+	[1] "EEEEEEEEEEEEEE5IIIIIIIIIII"
+	[1] 6.761885e-21
+	[1] "EEEEEEEEEEEEEEE5IIIIIIIIII"
+	[1] 3.211895e-19
+	[1] "EEEEEEEEEEEEEEEE5IIIIIIIII"
+	[1] 1.056545e-20
+	[1] "EEEEEEEEEEEEEEEEEE5IIIIIII"
+	[1] 1.254647e-18
+	[1] "EEEEEEEEEEEEEEEEEEEE5IIIII"
+	[1] 2.579454e-20
+	[1] "EEEEEEEEEEEEEEEEEEEEE5IIII"
+	[1] 1.612159e-20
+	[1] "EEEEEEEEEEEEEEEEEEEEEE5III"
+	[1] 7.657755e-19
+	Best State Path and original Sequence 
+	EEEEEEEEEEEEEEEEEE5IIIIIII 
+	CTTCATGTGAAAGCAGACGTAAGTCA 
+	Maximum Probability: 1.25464666093437e-18 
+	Maximum Prob (log):  -41.2196776860225 
+	Posterior Decoding:  0.461971754327234 
+	[1] "EEEEEEEEEEEEEEEEEE5IIIIIII"
+
+So far hopefully you have understood the principles of HMM. Obviously we cannot use the enumerate methods because when the length of sequence is increasing we could barely afford the time and computing resources to do that. We do have smarter algorithms. Keep reading. 
+
+Viterbi algorithm
+""""""""""""""""""""
 
 SVM
 -------------------------

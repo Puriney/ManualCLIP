@@ -58,6 +58,12 @@
 <li><a class="reference internal" href="#generate-sequence">Generate sequence</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#most-possible-state-path">Most Possible State Path</a><ul>
+<li><a class="reference internal" href="#compute-probability-of-state-path">Compute Probability of State Path</a></li>
+<li><a class="reference internal" href="#enumerate-state-paths">Enumerate State Paths</a></li>
+<li><a class="reference internal" href="#viterbi-algorithm">Viterbi algorithm</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#svm">SVM</a></li>
@@ -189,15 +195,15 @@ E
 <h4>Generate sequence<a class="headerlink" href="#generate-sequence" title="Permalink to this headline">¶</a></h4>
 <p>So far hopefully you clear have learned:</p>
 <ul class="simple">
-<li>Generating sequence path purely under intron state</li>
-<li>Determine state of next base when current base is under exon state</li>
+<li>Generating sequence path purely under one state, i.e. intron</li>
+<li>Determine state of next base when current base is under certain state, i.e. exon</li>
 </ul>
 <p>Next before generating sequences and of course state path we need make the emission and transition probabilities to the full story:</p>
 <div class="figure align-center">
 <a class="reference internal image-reference" href="_images/HMMandSplicingSite_Mx.png"><img alt="_images/HMMandSplicingSite_Mx.png" src="_images/HMMandSplicingSite_Mx.png" /></a>
 <p class="caption">Diagram showing emission and transition probabilities matrix <a class="reference internal" href="#eddy2004" id="id2">[Eddy2004]</a>.</p>
 </div>
-<p>In particular there are additional &#8220;Start&#8221; and &#8220;End&#8221; states for model purpose. These two states have no base assignment and they serve as the <tt class="docutils literal"><span class="pre">^</span></tt> and <tt class="docutils literal"><span class="pre">$</span></tt> in the regular expression in programming. In the figure the transition probability from &#8220;Start&#8221; to &#8220;Exon&#8221; state is <tt class="docutils literal"><span class="pre">1.0</span></tt> which means in our toy example here we are going to generate sequence starting with &#8220;Exon&#8221; and ending by &#8220;Intron&#8221;.</p>
+<p>In particular there are additional &#8220;Start&#8221; and &#8220;End&#8221; states for model purpose. These two states have no base assignment and they serve as the <tt class="docutils literal"><span class="pre">^</span></tt> and <tt class="docutils literal"><span class="pre">$</span></tt> in the regular expression in programming. In the figure the transition probability from &#8220;Start&#8221; to &#8220;Exon&#8221; state is <tt class="docutils literal"><span class="pre">1.0</span></tt> which means in our toy example here we are going to generate sequence starting with &#8220;Exon&#8221;. Likewise the probability of continuing &#8220;Intron&#8221; is <tt class="docutils literal"><span class="pre">0.9</span></tt>.</p>
 <p>The full emission probabilities matrix would be:</p>
 <div class="highlight-bash"><div class="highlight"><pre>        A    C    G    T
 S   0.00 0.00 0.00 0.00
@@ -241,6 +247,84 @@ StatPath<span class="o">:</span> E E E E E E E E E SS5 I I I I I N
 <span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">1</span>
 </pre></div>
 </div>
+<p>You may noticed that in this case the length of output sequence is 15 though 20 is pre-defined. Is it wrong? No, because the probability of changing from &#8220;Intron&#8221; to &#8220;End&#8221; state is <tt class="docutils literal"><span class="pre">0.1</span></tt>, not <tt class="docutils literal"><span class="pre">0</span></tt>, Ongoing &#8220;Intron&#8221; state is possible to choose &#8220;End&#8221; state for next base.</p>
+</div>
+</div>
+<div class="section" id="most-possible-state-path">
+<h3>Most Possible State Path<a class="headerlink" href="#most-possible-state-path" title="Permalink to this headline">¶</a></h3>
+<p>So far hopefully you have known how to think in HMM to generate sequence path and state path given the transition and emission probabilities matrix available. Now back to our original goal: locating 5&#8217;-end splicing site. Now out mind goes in <strong>top-bottom</strong> direction and our mission is to find the state path with highest probabilities given the observed sequence path.</p>
+<div class="section" id="compute-probability-of-state-path">
+<h4>Compute Probability of State Path<a class="headerlink" href="#compute-probability-of-state-path" title="Permalink to this headline">¶</a></h4>
+<p>Recall our example:</p>
+<div class="highlight-bash"><div class="highlight"><pre>Sequence Path: CTTCATGTGAAAGCAGACGTAAGTCA
+State    Path: EEEEEEEEEEEEEEEEEE5IIIIIII
+</pre></div>
+</div>
+<p>Given the observed sequence of 26nt, how likely do you think is the state path among the hundreds of combinations? In general <span class="math">\({\mathbf P}\left(\mathbf{s},\pi \mid \text{HMM},\theta\right)\)</span> of an Hidden Marcov Model with parameters ( <span class="math">\(\theta\)</span> ) generates a state path ( <span class="math">\(\pi\)</span> ) and an observed sequence ( <span class="math">\(\mathbf{s}\)</span> ) , is the product of all the emission probabilities and transition probabilities that were used:</p>
+<div class="math">
+\[\left( 0.25^{18} * 0.95 * 0.4^3 * 0.1 * 0.1 * 0.4^2 \right) * \left(1 * 0.9^{17} * 0.1 * 1 * 0.9^6 * 0.1 \right)\]</div>
+<p>26nt sequence has 26 emissions and 27 transitions (note the final end state).</p>
+<p>See <tt class="docutils literal"><span class="pre">ComputeStatePathProb</span></tt> function for details and it could yield:
+.. code-block:: r</p>
+<blockquote>
+<div><p>&gt; demo.seq.path &lt;- c(&#8220;CTTCATGTGAAAGCAGACGTAAGTCA&#8221;)
+&gt; demo.state.path &lt;- c(&#8220;EEEEEEEEEEEEEEEEEE5IIIIIII&#8221;)
+&gt; ComputeStatePathProb(seqPath = demo.seq.path, statePath = demo.state.path,</p>
+<blockquote>
+<div>transMtx = myTransMtx, emisMtx = myEmisMtx, log = TRUE)</div></blockquote>
+<p>[1] -41.21968</p>
+</div></blockquote>
+</div>
+<div class="section" id="enumerate-state-paths">
+<h4>Enumerate State Paths<a class="headerlink" href="#enumerate-state-paths" title="Permalink to this headline">¶</a></h4>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/HMMandSplicingSite.png"><img alt="_images/HMMandSplicingSite.png" src="_images/HMMandSplicingSite.png" /></a>
+<p class="caption">Most possible state path.</p>
+</div>
+<p>Among all the possible combinations of state path, how to pick up the most possible state path? There is one naive way: enumerate all the candidates, compute their probability, and pick up the highest one.</p>
+<div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> InspectorHMM<span class="p">(</span>demo.seq.path<span class="p">,</span> myTransMtx<span class="p">,</span> myEmisMtx<span class="p">)</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;All State Path with non-zero Probability: &quot;</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEE5IIIIIIIIIIIIIIIIIIIII&quot;</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">2.904208e-21</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEEEE5IIIIIIIIIIIIIIIIIII&quot;</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">8.621866e-20</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEEEEEE5IIIIIIIIIIIIIIIII&quot;</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">1.347167e-19</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEEEEEEE5IIIIIIIIIIIIIIII&quot;</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">4.431469e-21</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEEEEEEEE5IIIIIIIIIIIIIII&quot;</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">2.769668e-21</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEEEEEEEEE5IIIIIIIIIIIIII&quot;</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">1.731043e-21</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEEEEEEEEEE5IIIIIIIIIIIII&quot;</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">8.222452e-20</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEEEEEEEEEEEE5IIIIIIIIIII&quot;</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">6.761885e-21</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEEEEEEEEEEEEE5IIIIIIIIII&quot;</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">3.211895e-19</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEEEEEEEEEEEEEE5IIIIIIIII&quot;</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">1.056545e-20</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEEEEEEEEEEEEEEEE5IIIIIII&quot;</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">1.254647e-18</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEEEEEEEEEEEEEEEEEE5IIIII&quot;</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">2.579454e-20</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEEEEEEEEEEEEEEEEEEE5IIII&quot;</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">1.612159e-20</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEEEEEEEEEEEEEEEEEEEE5III&quot;</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">7.657755e-19</span>
+Best State Path and original Sequence
+EEEEEEEEEEEEEEEEEE5IIIIIII
+CTTCATGTGAAAGCAGACGTAAGTCA
+Maximum Probability<span class="o">:</span> <span class="m">1.25464666093437e-18</span>
+Maximum Prob <span class="p">(</span>log<span class="p">)</span><span class="o">:</span>  <span class="m">-41.2196776860225</span>
+Posterior Decoding<span class="o">:</span>  <span class="m">0.461971754327234</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEEEEEEEEEEEEEEEE5IIIIIII&quot;</span>
+</pre></div>
+</div>
+<p>So far hopefully you have understood the principles of HMM. Obviously we cannot use the enumerate methods because when the length of sequence is increasing we could barely afford the time and computing resources to do that. We do have smarter algorithms. Keep reading.</p>
+</div>
+<div class="section" id="viterbi-algorithm">
+<h4>Viterbi algorithm<a class="headerlink" href="#viterbi-algorithm" title="Permalink to this headline">¶</a></h4>
 </div>
 </div>
 </div>
@@ -315,7 +399,6 @@ cat<span class="p">(</span>sample.state<span class="p">)</span>
 <span class="c1">## -----------------------------</span>
 <span class="c1">## Generating sequence</span>
 <span class="c1">## -----------------------------</span>
-
 <span class="c1">## Construct transition matrix</span>
 S <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">1</span><span class="p">,</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">3</span><span class="p">))</span>
 E <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">0.9</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
@@ -363,6 +446,63 @@ GenerateHMMSeq <span class="o">&lt;-</span> <span class="kr">function</span><spa
     cat<span class="p">(</span><span class="s">&quot;Seq Path:&quot;</span><span class="p">,</span> na.omit<span class="p">(</span>out.seq.path<span class="p">),</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
     cat<span class="p">(</span><span class="s">&quot;StatPath:&quot;</span><span class="p">,</span> na.omit<span class="p">(</span>out.state.path<span class="p">),</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
     <span class="kr">return</span><span class="p">(</span><span class="m">1</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">## --------------------------</span>
+<span class="c1">## Compute Prob of state path</span>
+<span class="c1">## --------------------------</span>
+ComputeStatePathProb <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>seqPath<span class="p">,</span> statePath<span class="p">,</span> transMtx<span class="p">,</span> emisMtx<span class="p">,</span> log<span class="o">=</span><span class="kc">TRUE</span><span class="p">){</span>
+    seqPath <span class="o">&lt;-</span> unlist<span class="p">(</span>strsplit<span class="p">(</span>toupper<span class="p">(</span>seqPath<span class="p">),</span> <span class="s">&quot;&quot;</span><span class="p">))</span>
+    statePath <span class="o">&lt;-</span> unlist<span class="p">(</span>strsplit<span class="p">(</span>statePath<span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">))</span>
+    statePath<span class="p">[</span>statePath<span class="o">==</span><span class="s">&quot;5&quot;</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="s">&quot;SS5&quot;</span>
+    <span class="c1">## First base</span>
+    <span class="c1">## previous is under Start State</span>
+    prob <span class="o">&lt;-</span>  transMtx<span class="p">[</span><span class="s">&quot;S&quot;</span><span class="p">,</span> statePath<span class="p">[</span><span class="m">1</span><span class="p">]]</span> <span class="o">*</span> emisMtx<span class="p">[</span>statePath<span class="p">[</span><span class="m">1</span><span class="p">],</span> seqPath<span class="p">[</span><span class="m">1</span><span class="p">]]</span>
+    <span class="kr">for</span> <span class="p">(</span>i <span class="kr">in</span> <span class="m">2</span><span class="o">:</span>length<span class="p">(</span>seqPath<span class="p">)){</span>
+        state.i <span class="o">&lt;-</span> statePath<span class="p">[</span>i<span class="p">]</span>
+        nucleotide.i <span class="o">&lt;-</span> seqPath<span class="p">[</span>i<span class="p">]</span>
+        prob.i <span class="o">&lt;-</span> transMtx<span class="p">[</span>statePath<span class="p">[</span>i<span class="m">-1</span><span class="p">],</span>state.i<span class="p">]</span> <span class="o">*</span> emisMtx<span class="p">[</span>statePath<span class="p">[</span>i<span class="p">],</span> nucleotide.i<span class="p">]</span>
+        prob <span class="o">&lt;-</span> prob <span class="o">*</span> prob.i
+    <span class="p">}</span>
+    <span class="c1">## End State</span>
+    prob <span class="o">&lt;-</span> prob <span class="o">*</span> transMtx<span class="p">[</span>statePath<span class="p">[</span>length<span class="p">(</span>statePath<span class="p">)],</span> <span class="s">&quot;N&quot;</span><span class="p">]</span>
+    <span class="kr">if</span> <span class="p">(</span>log<span class="p">){</span>
+        <span class="kr">return</span> <span class="p">(</span>log2<span class="p">(</span>prob<span class="p">)</span><span class="o">/</span>log2<span class="p">(</span>exp<span class="p">(</span><span class="m">1</span><span class="p">)))</span> 
+    <span class="p">}</span> <span class="kr">else</span> <span class="p">{</span>
+        <span class="kr">return</span> <span class="p">(</span>prob<span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">## --------------------------------------</span>
+<span class="c1">## Force Compute Most Possible State Path</span>
+<span class="c1">## --------------------------------------</span>
+InspectorHMM <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>seqPath<span class="p">,</span> transMtx<span class="p">,</span> emisMtx <span class="p">){</span>
+    sumProb <span class="o">&lt;-</span> <span class="m">0</span>
+    allPath <span class="o">&lt;-</span> <span class="kc">NULL</span>
+    allProb <span class="o">&lt;-</span> <span class="kc">NULL</span>
+    print <span class="p">(</span><span class="s">&quot;All State Path with non-zero Probability: &quot;</span><span class="p">)</span>
+    <span class="kr">for</span> <span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span><span class="m">24</span><span class="p">)</span> <span class="p">{</span>
+        path_i <span class="o">&lt;-</span> c<span class="p">(</span>rep<span class="p">(</span><span class="s">&quot;E&quot;</span><span class="p">,</span> i<span class="p">),</span> <span class="s">&quot;5&quot;</span><span class="p">,</span> rep<span class="p">(</span><span class="s">&quot;I&quot;</span><span class="p">,</span> <span class="m">25</span><span class="o">-</span>i<span class="p">))</span>
+        path_i <span class="o">&lt;-</span> paste<span class="p">(</span>path_i<span class="p">,</span> collapse<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">)</span>
+        allPath<span class="p">[</span>i<span class="p">]</span> <span class="o">&lt;-</span> path_i
+        
+        p <span class="o">&lt;-</span> computeProb<span class="p">(</span>seqPath<span class="p">,</span> path_i<span class="p">,</span>transMtx<span class="p">,</span> emisMtx<span class="p">,</span>log<span class="o">=</span><span class="kc">FALSE</span><span class="p">)</span>
+        allProb<span class="p">[</span>i<span class="p">]</span> <span class="o">&lt;-</span> p 
+        <span class="kr">if</span> <span class="p">(</span>p <span class="o">!=</span> <span class="m">0</span><span class="p">){</span>
+            print <span class="p">(</span>path_i<span class="p">)</span>
+            print <span class="p">(</span>p<span class="p">)</span>
+            sumProb <span class="o">&lt;-</span> sumProb <span class="o">+</span> p 
+        <span class="p">}</span>
+    <span class="p">}</span>
+    maxProb <span class="o">&lt;-</span> max<span class="p">(</span>allProb<span class="p">,</span> na.rm<span class="o">=</span><span class="kc">TRUE</span><span class="p">)</span>
+    max <span class="o">&lt;-</span> which<span class="p">(</span>allProb <span class="o">==</span> maxProb<span class="p">)</span>
+    cat <span class="p">(</span><span class="s">&quot;Best State Path and original Sequence&quot;</span><span class="p">,</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    cat <span class="p">(</span>allPath<span class="p">[</span>max<span class="p">],</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    cat <span class="p">(</span>seqPath<span class="p">,</span><span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    cat <span class="p">(</span>paste<span class="p">(</span><span class="s">&quot;Maximum Probability: &quot;</span><span class="p">,</span> maxProb<span class="p">,</span> sep<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">),</span><span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    cat <span class="p">(</span>paste<span class="p">(</span><span class="s">&quot;Maximum Prob (log):  &quot;</span><span class="p">,</span> log2<span class="p">(</span>maxProb<span class="p">)</span><span class="o">/</span>log2<span class="p">(</span>exp<span class="p">(</span><span class="m">1</span><span class="p">)),</span> sep<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">),</span><span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    cat <span class="p">(</span>paste<span class="p">(</span><span class="s">&quot;Posterior Decoding:  &quot;</span><span class="p">,</span> maxProb<span class="o">/</span>sumProb<span class="p">,</span> sep<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">),</span><span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    <span class="kr">return</span> <span class="p">(</span>allPath<span class="p">[</span>max<span class="p">])</span>
 <span class="p">}</span>
 </pre></div>
 </div>
