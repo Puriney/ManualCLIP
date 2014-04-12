@@ -1,11 +1,8 @@
 .. A little book about CLIP-seq documentation master file, created by
-   sphinx-quickstart on Tue Feb 25 23:38:31 2014.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+	sphinx-quickstart on Tue Feb 25 23:38:31 2014.
+	You can adapt this file completely to your liking, but it should at least
+	contain the root `toctree` directive.
 
-.. _index: 
-
-========================================================
 A little book about CLIP-seq
 ========================================================
 
@@ -20,8 +17,7 @@ The book is deployed at `Readthedocs.org <http://a-little-book-about-clip-seq.re
 Book source at Github: https://github.com/Puriney/ManualCLIP 
 
 
-Contents
-========
+.. _site-docs:
 
 .. toctree::
    :maxdepth: 2
@@ -36,8 +32,6 @@ Logs
 
 - Apr 11 2014. Section 3.1 HMM: new source code for generating sequence
 - Apr 9 2014. Working on HMM introduction. So far "generat sequence". 
-
-
 
 License
 ========================================================
