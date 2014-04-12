@@ -179,8 +179,8 @@ Check the source R script to find ``GenerateHMMSeq`` function. After you type th
 
 You may noticed that in this case the length of output sequence is 15 though 20 is pre-defined. Is it wrong? No, because the probability of changing from "Intron" to "End" state is ``0.1``, not ``0``, Ongoing "Intron" state is possible to choose "End" state for next base. 
 
-Most Possible State Path
-^^^^^^^^^^^^^^^^^^^^^^^^
+Judge Possible State Path
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 So far hopefully you have known how to think in HMM to generate sequence path and state path given the transition and emission probabilities matrix available. Now back to our original goal: locating 5'-end splicing site. Now out mind goes in **top-bottom** direction and our mission is to find the state path with highest probabilities given the observed sequence path. 
 
@@ -203,7 +203,9 @@ Given the observed sequence of 26nt, how likely do you think is the state path a
 26nt sequence has 26 emissions and 27 transitions (note the final end state).
 
 See ``ComputeStatePathProb`` function for details and it could yield: 
+
 .. code-block:: r
+
 	> demo.seq.path <- c("CTTCATGTGAAAGCAGACGTAAGTCA")
 	> demo.state.path <- c("EEEEEEEEEEEEEEEEEE5IIIIIII")
 	> ComputeStatePathProb(seqPath = demo.seq.path, statePath = demo.state.path, 

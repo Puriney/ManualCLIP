@@ -58,7 +58,7 @@
 <li><a class="reference internal" href="#generate-sequence">Generate sequence</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#most-possible-state-path">Most Possible State Path</a><ul>
+<li><a class="reference internal" href="#judge-possible-state-path">Judge Possible State Path</a><ul>
 <li><a class="reference internal" href="#compute-probability-of-state-path">Compute Probability of State Path</a></li>
 <li><a class="reference internal" href="#enumerate-state-paths">Enumerate State Paths</a></li>
 <li><a class="reference internal" href="#viterbi-algorithm">Viterbi algorithm</a></li>
@@ -250,8 +250,8 @@ StatPath<span class="o">:</span> E E E E E E E E E SS5 I I I I I N
 <p>You may noticed that in this case the length of output sequence is 15 though 20 is pre-defined. Is it wrong? No, because the probability of changing from &#8220;Intron&#8221; to &#8220;End&#8221; state is <tt class="docutils literal"><span class="pre">0.1</span></tt>, not <tt class="docutils literal"><span class="pre">0</span></tt>, Ongoing &#8220;Intron&#8221; state is possible to choose &#8220;End&#8221; state for next base.</p>
 </div>
 </div>
-<div class="section" id="most-possible-state-path">
-<h3>Most Possible State Path<a class="headerlink" href="#most-possible-state-path" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="judge-possible-state-path">
+<h3>Judge Possible State Path<a class="headerlink" href="#judge-possible-state-path" title="Permalink to this headline">¶</a></h3>
 <p>So far hopefully you have known how to think in HMM to generate sequence path and state path given the transition and emission probabilities matrix available. Now back to our original goal: locating 5&#8217;-end splicing site. Now out mind goes in <strong>top-bottom</strong> direction and our mission is to find the state path with highest probabilities given the observed sequence path.</p>
 <div class="section" id="compute-probability-of-state-path">
 <h4>Compute Probability of State Path<a class="headerlink" href="#compute-probability-of-state-path" title="Permalink to this headline">¶</a></h4>
@@ -264,16 +264,14 @@ State    Path: EEEEEEEEEEEEEEEEEE5IIIIIII
 <div class="math">
 \[\left( 0.25^{18} * 0.95 * 0.4^3 * 0.1 * 0.1 * 0.4^2 \right) * \left(1 * 0.9^{17} * 0.1 * 1 * 0.9^6 * 0.1 \right)\]</div>
 <p>26nt sequence has 26 emissions and 27 transitions (note the final end state).</p>
-<p>See <tt class="docutils literal"><span class="pre">ComputeStatePathProb</span></tt> function for details and it could yield:
-.. code-block:: r</p>
-<blockquote>
-<div><p>&gt; demo.seq.path &lt;- c(&#8220;CTTCATGTGAAAGCAGACGTAAGTCA&#8221;)
-&gt; demo.state.path &lt;- c(&#8220;EEEEEEEEEEEEEEEEEE5IIIIIII&#8221;)
-&gt; ComputeStatePathProb(seqPath = demo.seq.path, statePath = demo.state.path,</p>
-<blockquote>
-<div>transMtx = myTransMtx, emisMtx = myEmisMtx, log = TRUE)</div></blockquote>
-<p>[1] -41.21968</p>
-</div></blockquote>
+<p>See <tt class="docutils literal"><span class="pre">ComputeStatePathProb</span></tt> function for details and it could yield:</p>
+<div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> demo.seq.path <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;CTTCATGTGAAAGCAGACGTAAGTCA&quot;</span><span class="p">)</span>
+<span class="o">&gt;</span> demo.state.path <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;EEEEEEEEEEEEEEEEEE5IIIIIII&quot;</span><span class="p">)</span>
+<span class="o">&gt;</span> ComputeStatePathProb<span class="p">(</span>seqPath <span class="o">=</span> demo.seq.path<span class="p">,</span> statePath <span class="o">=</span> demo.state.path<span class="p">,</span>
+                     transMtx <span class="o">=</span> myTransMtx<span class="p">,</span> emisMtx <span class="o">=</span> myEmisMtx<span class="p">,</span> log <span class="o">=</span> <span class="kc">TRUE</span><span class="p">)</span>
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">-41.21968</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="enumerate-state-paths">
 <h4>Enumerate State Paths<a class="headerlink" href="#enumerate-state-paths" title="Permalink to this headline">¶</a></h4>

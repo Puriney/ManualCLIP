@@ -29,6 +29,7 @@ Book source at Github: https://github.com/Puriney/ManualCLIP
 Logs
 =====
 
+- Apr 12 2014. Selecting most possible path by emunerating. 
 - Apr 11 2014. Section 3.1 HMM: new source code for generating sequence
 - Apr 9 2014. Working on HMM introduction. So far "generat sequence". 
 
