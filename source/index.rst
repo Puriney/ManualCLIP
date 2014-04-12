@@ -17,11 +17,11 @@ The book is deployed at `Readthedocs.org <http://a-little-book-about-clip-seq.re
 Book source at Github: https://github.com/Puriney/ManualCLIP 
 
 
-Contents
+Chapters
 ----------------------------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    c00intro.rst
    c10anlyzRBP.rst
