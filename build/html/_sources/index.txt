@@ -20,16 +20,16 @@ The book is deployed at `Readthedocs.org <http://a-little-book-about-clip-seq.re
 Book source at Github: https://github.com/Puriney/ManualCLIP 
 
 
-Chapters
-========================================================
+Contents
+========
 
 .. toctree::
    :maxdepth: 2
 
-   c00intro.rst
-   c10anlyzRBP.rst
-   c20mdlPrdict.rst
-   c30pipeline.rst
+   c00intro
+   c10anlyzRBP
+   c20mdlPrdict
+   c30pipeline
 
 Logs
 ========================================================
