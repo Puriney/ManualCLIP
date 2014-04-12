@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>A little book about CLIP-seq &mdash; A little book about CLIP-seq 0.0.1 documentation</title>
+    <title>A little book about CLIP-seq &mdash; A little book about CLIP-seq 0.0.2 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.0.1',
+        VERSION:     '0.0.2',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="A little book about CLIP-seq 0.0.1 documentation" href="#" />
+    <link rel="top" title="A little book about CLIP-seq 0.0.2 documentation" href="#" />
     <link rel="next" title="CLIP-seq 101" href="c00intro.html" /> 
   </head>
   <body>
@@ -37,7 +37,7 @@
         <li class="right" >
           <a href="c00intro.html" title="CLIP-seq 101"
              accesskey="N">next</a> |</li>
-        <li><a href="#">A little book about CLIP-seq 0.0.1 documentation</a> &raquo;</li> 
+        <li><a href="#">A little book about CLIP-seq 0.0.2 documentation</a> &raquo;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar">
@@ -82,7 +82,7 @@
           <div class="body">
             
   <div class="section" id="a-little-book-about-clip-seq">
-<h1>A little book about CLIP-seq<a class="headerlink" href="#a-little-book-about-clip-seq" title="Permalink to this headline">¶</a></h1>
+<span id="index"></span><h1>A little book about CLIP-seq<a class="headerlink" href="#a-little-book-about-clip-seq" title="Permalink to this headline">¶</a></h1>
 <p>By Yun Yan. Feel free to email me: <a class="reference external" href="mailto:yanyunAAAAAAA&#37;&#52;&#48;whu&#46;edu&#46;cn">yanyunAAAAAAA<span>&#64;</span>whu<span>&#46;</span>edu<span>&#46;</span>cn</a>, please, with the polyA tail removed.</p>
 <p>This is an overview, glimpse, simple introduction to CLIP-seq. This little book would cover the brief history related to biochemistry; what data and information you could get out of CLIP-seq; how to analyze those data. In particular how computer science contribute to robust data analysis, including hidden Markov model, random forest, SVM, etc.</p>
 <p>Hopefully this book would build a bridge between biologists and geeky computational scientists, at least in RNA-protein interaction research fields. After reading this book, bio-readers would have clearer concept about how the raw data produced by your efforts would be literally cooked as findings with scientific meanings. On the other hand computational scientists would not only learn to appreciate the underlying biological mysteries but also make the link between figuring out computational algorithms and solving biological problems more tight.</p>
@@ -92,10 +92,31 @@
 <h2>Chapters<a class="headerlink" href="#chapters" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="c00intro.html">CLIP-seq 101</a></li>
-<li class="toctree-l1"><a class="reference internal" href="c10anlyzRBP.html">Analyze CLIP-seq Data to locate RBP Binding Sites</a></li>
-<li class="toctree-l1"><a class="reference internal" href="c20mdlPrdict.html">Model and Predict RBP Binding Preference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="c30pipeline.html">Pipelines, Toolkits and Softwares</a></li>
+<li class="toctree-l1"><a class="reference internal" href="c00intro.html">CLIP-seq 101</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="c00intro.html#what-clip-seq-could-give">What CLIP-seq could give?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="c00intro.html#clip">CLIP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="c00intro.html#hits-clip-par-clip-iclip">HITS-CLIP, PAR-CLIP, iCLIP</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="c10anlyzRBP.html">Analyze CLIP-seq Data to locate RBP Binding Sites</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="c10anlyzRBP.html#hits-clip-in-silico">HITS-CLIP <em>in silico</em></a></li>
+<li class="toctree-l2"><a class="reference internal" href="c10anlyzRBP.html#cims">CIMS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="c10anlyzRBP.html#rnamotifs">RNAmotifs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="c20mdlPrdict.html">Model and Predict RBP Binding Preference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="c20mdlPrdict.html#hidden-markov-model">Hidden Markov Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="c20mdlPrdict.html#svm">SVM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="c20mdlPrdict.html#graph-kernel">Graph Kernel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="c20mdlPrdict.html#random-forest">Random Forest</a></li>
+<li class="toctree-l2"><a class="reference internal" href="c20mdlPrdict.html#references">References</a></li>
+<li class="toctree-l2"><a class="reference internal" href="c20mdlPrdict.html#source-scripts">Source Scripts</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="c30pipeline.html">Pipelines, Toolkits and Softwares</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="c30pipeline.html#pipe-clip">PIPE-CLIP</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -127,7 +148,7 @@
         <li class="right" >
           <a href="c00intro.html" title="CLIP-seq 101"
              >next</a> |</li>
-        <li><a href="#">A little book about CLIP-seq 0.0.1 documentation</a> &raquo;</li> 
+        <li><a href="#">A little book about CLIP-seq 0.0.2 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

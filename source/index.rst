@@ -3,6 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. _index: 
+
+========================================================
 A little book about CLIP-seq
 ========================================================
 
@@ -21,7 +24,7 @@ Chapters
 ========================================================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    c00intro.rst
    c10anlyzRBP.rst
