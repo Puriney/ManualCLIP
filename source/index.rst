@@ -18,7 +18,7 @@ Book source at Github: https://github.com/Puriney/ManualCLIP
 
 
 Chapters
-----------------------------
+========================================================
 
 .. toctree::
    :maxdepth: 1
@@ -29,7 +29,7 @@ Chapters
    c30pipeline.rst
 
 Logs
-----------------------------
+========================================================
 
 - Apr 11 2014. Section 3.1 HMM: new source code for generating sequence
 - Apr 9 2014. Working on HMM introduction. So far "generat sequence". 
@@ -37,7 +37,7 @@ Logs
 
 
 License
-----------------------------
+========================================================
 
 This book is licensed under a `Creative Commons Attribution-NonCommercial-ShareAlike 3.0 United States License. <http://creativecommons.org/licenses/by-nc-sa/3.0/us/>`_
 
