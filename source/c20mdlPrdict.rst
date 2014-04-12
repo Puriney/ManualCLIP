@@ -44,7 +44,7 @@ Let's play with intron state and under intron state we set the bases distributio
 	I 0.4 0.1 0.1 0.4
 
 .. figure:: _static/c20HMM_Emission_Prob1.png
-	:scale: 20 %
+	:scale: 40 %
 	:align: center
 
 	Distribution of A, C, G, T in toy intron. *(See R scripts to generate pie chart in final section in case of your curiosity)*
