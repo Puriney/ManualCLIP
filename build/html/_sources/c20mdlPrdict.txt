@@ -1,6 +1,9 @@
 Model and Predict RBP Binding Preference
 ==================================================
 
+With methods mentioned in previous chapter we could hopefully distinguish the informative signals from the sequencing noises. Results achieved at this step could be enough for most exploratory researches. However, what if we take a further step? What could we learn from the confident results? Could we learn about the binding preference of RNA binding proteins and construct models to unveil why RBP binds here but not there? Could we even predict the global binding sites of RBP? It does not necessarily means making CLIP-seq *in silico* possible, but machine learning methods could yield promising supplement to the real signals which could be left out by the empirical thresholding. 
+
+
 Hidden Markov Model
 -------------------------
 
@@ -54,7 +57,8 @@ The **emission probabilities** under intron state could be described as the abov
 	> dna.bases <- c("A", "C", "G", "T")
 	> intron.emission.prob <- c(0.40, 0.10, 0.10, 0.40)
 	> seq.len <- 26
-	> sample.seq <- sample(x = dna.bases, prob = intron.emission.prob, size = seq.len, replace = T)
+	> sample.seq <- sample(x = dna.bases, prob = intron.emission.prob, 
+							size = seq.len, replace = T)
 	> cat(sample.seq, "\n")
 	> table(sample.seq)
 	A C A G A A A A A A A T G A T A A A C A G G G A A T 
@@ -75,7 +79,7 @@ This story under intron state could be exactly applied to exon, splicing sites s
 Transition Probs
 """"""""""""""""""""""""""""""""""""""""""""""""""""
 
-HMM has a feature: the next state is determined by ongoing state, or ongoing state is determined by previous one. For example, now we know we are under "Exon" state. When we considering generating next one, we are hesitating between whether continuing "Exon", or changing to "Splicing Site" state. Moving from one state to another state is exactly determined by transition probabilities. 
+HMM has a feature: the next state is determined by ongoing state, or ongoing state is determined by previous one. For example, now we know we are under "Exon" state. When we considering generating next one, we are hesitating between whether continuing "Exon", or changing to "Splicing Site" state. Moving from one state to another state is exactly determined by **transition probabilities**. 
 
 Though emission and transition probabilities have different biological missions: generating sequence and state path respectively. Their mathematical principle are exactly same - sampling something following multinomial model. 
 
@@ -85,7 +89,8 @@ Let's assume exon status has the following transition probabilities:
 
 	> state.bases <- c("E", "5", "I")
 	> exon.transition.prob <- c(0.9, 0.1, 0)
-	> exon.transition.matrix <- matrix(exon.transition.prob, nrow = 1, byrow = T)
+	> exon.transition.matrix <- matrix(exon.transition.prob, nrow = 1, 
+										byrow = T)
 	> colnames(exon.transition.matrix) <- state.bases
 	> row.names(exon.transition.matrix) <- "E"
 	> print(exon.transition.matrix)
@@ -99,7 +104,8 @@ You cannot be unfamiliar with the following codes to choose state for next base:
 .. code-block:: r
 
 	> set.seed(1026)
-	> sample.state <- sample(x = state.bases, prob = exon.transition.prob, size = 1, replace = T)
+	> sample.state <- sample(x = state.bases, prob = exon.transition.prob, 
+							size = 1, replace = T)
 	> cat(sample.state)
 	E
 
@@ -111,16 +117,65 @@ So far hopefully you clear have learned:
 - Generating sequence path purely under intron state
 - Determine state of next base when current base is under exon state
 
-Next we need make the emission and transition probabilities to the full story: 
+Next before generating sequences and of course state path we need make the emission and transition probabilities to the full story: 
 
 
 .. figure:: _static/HMMandSplicingSite_Mx.png
 	:scale: 50 %
 	:align: center
 
-(img credit: Sean R Eddy)
+	Diagram showing emission and transition probabilities matrix [Eddy2004]_. 
 
+In particular there are additional "Start" and "End" states for model purpose. These two states have no base assignment and they serve as the ``^`` and ``$`` in the regular expression in programming. In the figure the transition probability from "Start" to "Exon" state is ``1.0`` which means in our toy example here we are going to generate sequence starting with "Exon" and ending by "Intron". 
 
+The full emission probabilities matrix would be: 
+
+.. code-block:: bash
+
+		A    C    G    T
+	S   0.00 0.00 0.00 0.00
+	E   0.25 0.25 0.25 0.25
+	SS5 0.05 0.00 0.95 0.00
+	I   0.40 0.10 0.10 0.40
+	N   0.00 0.00 0.00 0.00
+
+The full transition probabilities matrix would be: 
+
+.. code-block:: bash
+
+	    S   E SS5   I   N
+	S   0 1.0 0.0 0.0 0.0
+	E   0 0.9 0.1 0.0 0.0
+	SS5 0 0.0 0.0 1.0 0.0
+	I   0 0.0 0.0 0.9 0.1
+	N   0 0.0 0.0 0.0 1.0
+
+Check the source R script to find ``GenerateHMMSeq`` function. After you type the following in the R console, TA-DA, a sequence with HMM in mind is generated. 
+
+.. code-block:: r
+
+	> set.seed(1026)
+	> GenerateHMMSeq(emmisionMx=myEmisMtx, transitionMx=myTransMtx, len=20)
+	Start
+	Base 1 is A under E 
+	Base 2 is A under E 
+	Base 3 is C under E 
+	Base 4 is G under E 
+	Base 5 is G under E 
+	Base 6 is T under E 
+	Base 7 is C under E 
+	Base 8 is C under E 
+	Base 9 is C under E 
+	Base 10 is G under SS5 
+	Base 11 is G under I 
+	Base 12 is A under I 
+	Base 13 is T under I 
+	Base 14 is T under I 
+	Base 15 is T under I 
+	End
+	Seq Path: A A C G G T C C C G G A T T T 
+	StatPath: E E E E E E E E E SS5 I I I I I N 
+	[1] 1
 
 SVM
 -------------------------

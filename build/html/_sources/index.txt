@@ -14,6 +14,12 @@ Hopefully this book would build a bridge between biologists and geeky computatio
 
 Book source at Github: https://github.com/Puriney/ManualCLIP 
 
+
+**Logs**
+
+- Apr 11 2014. Section 3.1 HMM: new source code for generating sequence
+- Apr 9 2014. Working on HMM introduction. So far "generat sequence". 
+
 **Contents**
 
 .. toctree::

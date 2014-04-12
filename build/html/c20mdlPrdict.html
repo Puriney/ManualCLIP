@@ -103,6 +103,7 @@
             
   <div class="section" id="model-and-predict-rbp-binding-preference">
 <h1>Model and Predict RBP Binding Preference<a class="headerlink" href="#model-and-predict-rbp-binding-preference" title="Permalink to this headline">¶</a></h1>
+<p>With methods mentioned in previous chapter we could hopefully distinguish the informative signals from the sequencing noises. Results achieved at this step could be enough for most exploratory researches. However, what if we take a further step? What could we learn from the confident results? Could we learn about the binding preference of RNA binding proteins and construct models to unveil why RBP binds here but not there? Could we even predict the global binding sites of RBP? It does not necessarily means making CLIP-seq <em>in silico</em> possible, but machine learning methods could yield promising supplement to the real signals which could be left out by the empirical thresholding.</p>
 <div class="section" id="hidden-markov-model">
 <h2>Hidden Markov Model<a class="headerlink" href="#hidden-markov-model" title="Permalink to this headline">¶</a></h2>
 <p>In the beginning of this section I would like to introduce HMM by a toy application: 5&#8217; end splicing site recognition, which was originated from NBT paper <a class="reference internal" href="#eddy2004" id="id1">[Eddy2004]</a>. Admittedly this toy HMM is naive, it hopefully could help you take first step knowing how to infer the most possible splicing site, simply starting from raw DNA/RNA sequence together with some prior knowledges. For now we begin with the sequence: <em>CTTCATGTGAAAGCAGACGTAAGTCA</em>. Series of ideas and concepts would be illustrated step by step so that you could see how the biological question was translated to mathematical questions. Hopefully after you have known HMM I would introduce how HMM was employed in RBP science researches.</p>
@@ -141,7 +142,8 @@ I 0.4 0.1 0.1 0.4
 <span class="o">&gt;</span> dna.bases <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span> <span class="s">&quot;C&quot;</span><span class="p">,</span> <span class="s">&quot;G&quot;</span><span class="p">,</span> <span class="s">&quot;T&quot;</span><span class="p">)</span>
 <span class="o">&gt;</span> intron.emission.prob <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0.40</span><span class="p">,</span> <span class="m">0.10</span><span class="p">,</span> <span class="m">0.10</span><span class="p">,</span> <span class="m">0.40</span><span class="p">)</span>
 <span class="o">&gt;</span> seq.len <span class="o">&lt;-</span> <span class="m">26</span>
-<span class="o">&gt;</span> sample.seq <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> dna.bases<span class="p">,</span> prob <span class="o">=</span> intron.emission.prob<span class="p">,</span> size <span class="o">=</span> seq.len<span class="p">,</span> replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
+<span class="o">&gt;</span> sample.seq <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> dna.bases<span class="p">,</span> prob <span class="o">=</span> intron.emission.prob<span class="p">,</span>
+                                                size <span class="o">=</span> seq.len<span class="p">,</span> replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
 <span class="o">&gt;</span> cat<span class="p">(</span>sample.seq<span class="p">,</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
 <span class="o">&gt;</span> table<span class="p">(</span>sample.seq<span class="p">)</span>
 A C A G A A A A A A A <span class="k-Variable">T</span> G A <span class="k-Variable">T</span> A A A C A G G G A A <span class="k-Variable">T</span>
@@ -159,12 +161,13 @@ sample.seq
 </div>
 <div class="section" id="transition-probs">
 <h4>Transition Probs<a class="headerlink" href="#transition-probs" title="Permalink to this headline">¶</a></h4>
-<p>HMM has a feature: the next state is determined by ongoing state, or ongoing state is determined by previous one. For example, now we know we are under &#8220;Exon&#8221; state. When we considering generating next one, we are hesitating between whether continuing &#8220;Exon&#8221;, or changing to &#8220;Splicing Site&#8221; state. Moving from one state to another state is exactly determined by transition probabilities.</p>
+<p>HMM has a feature: the next state is determined by ongoing state, or ongoing state is determined by previous one. For example, now we know we are under &#8220;Exon&#8221; state. When we considering generating next one, we are hesitating between whether continuing &#8220;Exon&#8221;, or changing to &#8220;Splicing Site&#8221; state. Moving from one state to another state is exactly determined by <strong>transition probabilities</strong>.</p>
 <p>Though emission and transition probabilities have different biological missions: generating sequence and state path respectively. Their mathematical principle are exactly same - sampling something following multinomial model.</p>
 <p>Let&#8217;s assume exon status has the following transition probabilities:</p>
 <div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> state.bases <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;E&quot;</span><span class="p">,</span> <span class="s">&quot;5&quot;</span><span class="p">,</span> <span class="s">&quot;I&quot;</span><span class="p">)</span>
 <span class="o">&gt;</span> exon.transition.prob <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0.9</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
-<span class="o">&gt;</span> exon.transition.matrix <span class="o">&lt;-</span> matrix<span class="p">(</span>exon.transition.prob<span class="p">,</span> nrow <span class="o">=</span> <span class="m">1</span><span class="p">,</span> byrow <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
+<span class="o">&gt;</span> exon.transition.matrix <span class="o">&lt;-</span> matrix<span class="p">(</span>exon.transition.prob<span class="p">,</span> nrow <span class="o">=</span> <span class="m">1</span><span class="p">,</span>
+                                                                        byrow <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
 <span class="o">&gt;</span> colnames<span class="p">(</span>exon.transition.matrix<span class="p">)</span> <span class="o">&lt;-</span> state.bases
 <span class="o">&gt;</span> row.names<span class="p">(</span>exon.transition.matrix<span class="p">)</span> <span class="o">&lt;-</span> <span class="s">&quot;E&quot;</span>
 <span class="o">&gt;</span> print<span class="p">(</span>exon.transition.matrix<span class="p">)</span>
@@ -175,7 +178,8 @@ E <span class="m">0.9</span> <span class="m">0.1</span> <span class="m">0</span>
 <p>It means the probability of continuing exon state is 0.9 whereas changing to 5&#8217; end splicing site state is 0.1. Note that in our toy model exon cannot directly jump to intron state.</p>
 <p>You cannot be unfamiliar with the following codes to choose state for next base:</p>
 <div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> set.seed<span class="p">(</span><span class="m">1026</span><span class="p">)</span>
-<span class="o">&gt;</span> sample.state <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> state.bases<span class="p">,</span> prob <span class="o">=</span> exon.transition.prob<span class="p">,</span> size <span class="o">=</span> <span class="m">1</span><span class="p">,</span> replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
+<span class="o">&gt;</span> sample.state <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> state.bases<span class="p">,</span> prob <span class="o">=</span> exon.transition.prob<span class="p">,</span>
+                                                size <span class="o">=</span> <span class="m">1</span><span class="p">,</span> replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
 <span class="o">&gt;</span> cat<span class="p">(</span>sample.state<span class="p">)</span>
 E
 </pre></div>
@@ -188,11 +192,55 @@ E
 <li>Generating sequence path purely under intron state</li>
 <li>Determine state of next base when current base is under exon state</li>
 </ul>
-<p>Next we need make the emission and transition probabilities to the full story:</p>
+<p>Next before generating sequences and of course state path we need make the emission and transition probabilities to the full story:</p>
 <div class="figure align-center">
 <a class="reference internal image-reference" href="_images/HMMandSplicingSite_Mx.png"><img alt="_images/HMMandSplicingSite_Mx.png" src="_images/HMMandSplicingSite_Mx.png" /></a>
+<p class="caption">Diagram showing emission and transition probabilities matrix <a class="reference internal" href="#eddy2004" id="id2">[Eddy2004]</a>.</p>
 </div>
-<p>(img credit: Sean R Eddy)</p>
+<p>In particular there are additional &#8220;Start&#8221; and &#8220;End&#8221; states for model purpose. These two states have no base assignment and they serve as the <tt class="docutils literal"><span class="pre">^</span></tt> and <tt class="docutils literal"><span class="pre">$</span></tt> in the regular expression in programming. In the figure the transition probability from &#8220;Start&#8221; to &#8220;Exon&#8221; state is <tt class="docutils literal"><span class="pre">1.0</span></tt> which means in our toy example here we are going to generate sequence starting with &#8220;Exon&#8221; and ending by &#8220;Intron&#8221;.</p>
+<p>The full emission probabilities matrix would be:</p>
+<div class="highlight-bash"><div class="highlight"><pre>        A    C    G    T
+S   0.00 0.00 0.00 0.00
+E   0.25 0.25 0.25 0.25
+SS5 0.05 0.00 0.95 0.00
+I   0.40 0.10 0.10 0.40
+N   0.00 0.00 0.00 0.00
+</pre></div>
+</div>
+<p>The full transition probabilities matrix would be:</p>
+<div class="highlight-bash"><div class="highlight"><pre>    S   E SS5   I   N
+S   0 1.0 0.0 0.0 0.0
+E   0 0.9 0.1 0.0 0.0
+SS5 0 0.0 0.0 1.0 0.0
+I   0 0.0 0.0 0.9 0.1
+N   0 0.0 0.0 0.0 1.0
+</pre></div>
+</div>
+<p>Check the source R script to find <tt class="docutils literal"><span class="pre">GenerateHMMSeq</span></tt> function. After you type the following in the R console, TA-DA, a sequence with HMM in mind is generated.</p>
+<div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> set.seed<span class="p">(</span><span class="m">1026</span><span class="p">)</span>
+<span class="o">&gt;</span> GenerateHMMSeq<span class="p">(</span>emmisionMx<span class="o">=</span>myEmisMtx<span class="p">,</span> transitionMx<span class="o">=</span>myTransMtx<span class="p">,</span> len<span class="o">=</span><span class="m">20</span><span class="p">)</span>
+Start
+Base <span class="m">1</span> is A under E
+Base <span class="m">2</span> is A under E
+Base <span class="m">3</span> is C under E
+Base <span class="m">4</span> is G under E
+Base <span class="m">5</span> is G under E
+Base <span class="m">6</span> is <span class="k-Variable">T</span> under E
+Base <span class="m">7</span> is C under E
+Base <span class="m">8</span> is C under E
+Base <span class="m">9</span> is C under E
+Base <span class="m">10</span> is G under SS5
+Base <span class="m">11</span> is G under I
+Base <span class="m">12</span> is A under I
+Base <span class="m">13</span> is <span class="k-Variable">T</span> under I
+Base <span class="m">14</span> is <span class="k-Variable">T</span> under I
+Base <span class="m">15</span> is <span class="k-Variable">T</span> under I
+End
+Seq Path<span class="o">:</span> A A C G G <span class="k-Variable">T</span> C C C G G A <span class="k-Variable">T</span> <span class="k-Variable">T</span> <span class="k-Variable">T</span>
+StatPath<span class="o">:</span> E E E E E E E E E SS5 I I I I I N
+<span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">1</span>
+</pre></div>
+</div>
 </div>
 </div>
 </div>
@@ -210,7 +258,7 @@ E
 <table class="docutils citation" frame="void" id="eddy2004" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[Eddy2004]</a></td><td>Eddy, S. R. What is a hidden Markov model? Nat. Biotechnol. 22, 1315–1316 (2004).</td></tr>
+<tr><td class="label">[Eddy2004]</td><td><em>(<a class="fn-backref" href="#id1">1</a>, <a class="fn-backref" href="#id2">2</a>)</em> Eddy, S. R. What is a hidden Markov model? Nat. Biotechnol. 22, 1315–1316 (2004).</td></tr>
 </tbody>
 </table>
 </div>
@@ -230,11 +278,16 @@ intron.emmision.matrix <span class="o">&lt;-</span> matrix<span class="p">(</spa
 colnames<span class="p">(</span>intron.emmision.matrix<span class="p">)</span> <span class="o">&lt;-</span> dna.bases
 row.names<span class="p">(</span>intron.emmision.matrix<span class="p">)</span> <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;I&quot;</span><span class="p">)</span>
 <span class="c1">## Plot wheel of intron</span>
-intron.emmision.prob2 <span class="o">&lt;-</span> data.frame<span class="p">(</span>Base <span class="o">=</span> paste<span class="p">(</span>dna.bases<span class="p">,</span> as.character<span class="p">(</span>intron.emission.prob<span class="p">),</span> sep<span class="o">=</span><span class="s">&quot;=&quot;</span><span class="p">),</span> Prob <span class="o">=</span> intron.emission.prob<span class="p">)</span>
+intron.emmision.prob2 <span class="o">&lt;-</span> data.frame<span class="p">(</span>Base <span class="o">=</span> 
+                                        paste<span class="p">(</span>dna.bases<span class="p">,</span> 
+                                              as.character<span class="p">(</span>intron.emission.prob<span class="p">),</span>
+                                              sep<span class="o">=</span><span class="s">&quot;=&quot;</span><span class="p">),</span>
+                                    Prob <span class="o">=</span> intron.emission.prob<span class="p">)</span>
 p <span class="o">&lt;-</span> ggplot<span class="p">(</span>intron.emmision.prob2<span class="p">,</span> aes<span class="p">(</span>x<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> y<span class="o">=</span>Prob<span class="p">,</span> fill <span class="o">=</span> Base<span class="p">))</span> <span class="o">+</span> 
-        geom_bar<span class="p">(</span>width <span class="o">=</span> <span class="m">3</span><span class="p">)</span> <span class="o">+</span> 
+        geom_bar<span class="p">(</span>width <span class="o">=</span> <span class="m">1</span><span class="p">)</span> <span class="o">+</span> 
         coord_polar<span class="p">(</span><span class="s">&quot;y&quot;</span><span class="p">)</span> <span class="o">+</span> 
-        xlab<span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> ylab<span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> ggtitle<span class="p">(</span><span class="s">&#39;Intron Roulette Wheel&#39;</span><span class="p">)</span> <span class="o">+</span> labs<span class="p">(</span>fill<span class="o">=</span><span class="s">&quot;Base&quot;</span><span class="p">)</span> <span class="o">+</span> 
+        xlab<span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> ylab<span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> ggtitle<span class="p">(</span><span class="s">&#39;Intron Roulette Wheel&#39;</span><span class="p">)</span> <span class="o">+</span> 
+        labs<span class="p">(</span>fill<span class="o">=</span><span class="s">&quot;Base&quot;</span><span class="p">)</span> <span class="o">+</span> 
         opts<span class="p">(</span>axis.ticks<span class="o">=</span>theme_blank<span class="p">())</span>
 p 
 <span class="c1">## Sample bases</span>
@@ -258,6 +311,59 @@ set.seed<span class="p">(</span><span class="m">1026</span><span class="p">)</sp
 sample.state <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> state.bases<span class="p">,</span> prob <span class="o">=</span> exon.transition.prob<span class="p">,</span>
                        size <span class="o">=</span> <span class="m">1</span><span class="p">,</span> replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
 cat<span class="p">(</span>sample.state<span class="p">)</span>
+
+<span class="c1">## -----------------------------</span>
+<span class="c1">## Generating sequence</span>
+<span class="c1">## -----------------------------</span>
+
+<span class="c1">## Construct transition matrix</span>
+S <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">1</span><span class="p">,</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">3</span><span class="p">))</span>
+E <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">0.9</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
+SS5 <span class="o">&lt;-</span> c<span class="p">(</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">3</span><span class="p">),</span> <span class="m">1</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
+I <span class="o">&lt;-</span> c<span class="p">(</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">3</span><span class="p">),</span> <span class="m">0.9</span><span class="p">,</span> <span class="m">0.1</span><span class="p">)</span>
+N <span class="o">&lt;-</span> c<span class="p">(</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">4</span><span class="p">),</span> <span class="m">1</span><span class="p">)</span>
+myTransMtx <span class="o">&lt;-</span> rbind<span class="p">(</span>S<span class="p">,</span>E<span class="p">,</span> SS5<span class="p">,</span> I<span class="p">,</span> N<span class="p">)</span>
+colnames<span class="p">(</span>myTransMtx<span class="p">)</span> <span class="o">&lt;-</span> rownames<span class="p">(</span>myTransMtx<span class="p">)</span>
+print<span class="p">(</span>myTransMtx<span class="p">)</span>
+<span class="c1">## Construct emission matrix</span>
+S <span class="o">&lt;-</span> rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">4</span><span class="p">)</span>
+E <span class="o">&lt;-</span> rep<span class="p">(</span><span class="m">1</span><span class="o">/</span><span class="m">4</span><span class="p">,</span> <span class="m">4</span><span class="p">)</span>
+SS5 <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0.05</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0.95</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
+I <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0.4</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> <span class="m">0.4</span><span class="p">)</span>
+N <span class="o">&lt;-</span> c<span class="p">(</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">4</span><span class="p">))</span>
+myEmisMtx <span class="o">&lt;-</span> rbind<span class="p">(</span>S<span class="p">,</span>E<span class="p">,</span> SS5<span class="p">,</span> I<span class="p">,</span> N<span class="p">)</span>
+colnames<span class="p">(</span>myEmisMtx<span class="p">)</span> <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span> <span class="s">&quot;C&quot;</span><span class="p">,</span> <span class="s">&quot;G&quot;</span><span class="p">,</span> <span class="s">&quot;T&quot;</span><span class="p">)</span>
+print<span class="p">(</span>myEmisMtx<span class="p">)</span>
+<span class="c1">## Function to generate sequence</span>
+GenerateHMMSeq <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>emmisionMx<span class="p">,</span> transitionMx<span class="p">,</span> len<span class="p">){</span>
+    state.bases <span class="o">&lt;-</span> row.names<span class="p">(</span>emmisionMx<span class="p">)</span>
+    dna.bases   <span class="o">&lt;-</span> colnames<span class="p">(</span>emmisionMx<span class="p">)</span>
+    out.seq.path <span class="o">&lt;-</span> rep<span class="p">(</span><span class="kc">NA</span><span class="p">,</span> len<span class="p">)</span>
+    out.state.path <span class="o">&lt;-</span> rep<span class="p">(</span><span class="kc">NA</span><span class="p">,</span> len<span class="p">)</span>
+    <span class="c1">## State of first base is &quot;Start&quot;</span>
+    state0 <span class="o">&lt;-</span> <span class="s">&quot;S&quot;</span>
+    cat<span class="p">(</span><span class="s">&quot;Start\n&quot;</span><span class="p">)</span>
+    
+    <span class="kr">for</span> <span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span>len<span class="p">)</span> <span class="p">{</span>
+        <span class="c1">## Choose State</span>
+        state.i <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> state.bases<span class="p">,</span> prob <span class="o">=</span> transitionMx<span class="p">[</span>state0<span class="p">,</span> <span class="p">],</span> 
+                          replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">,</span> size <span class="o">=</span> <span class="m">1</span><span class="p">)</span>
+        <span class="kr">if</span><span class="p">(</span>state.i <span class="o">==</span> <span class="s">&quot;N&quot;</span><span class="p">){</span>
+            out.state.path<span class="p">[</span>i<span class="p">]</span> <span class="o">&lt;-</span> state.i
+            cat<span class="p">(</span><span class="s">&quot;End\n&quot;</span><span class="p">)</span>
+            <span class="kr">break</span>
+        <span class="p">}</span>
+        base.i  <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> dna.bases<span class="p">,</span> prob <span class="o">=</span> emmisionMx<span class="p">[</span>state.i<span class="p">,</span> <span class="p">],</span> 
+                          replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">,</span> size <span class="o">=</span> <span class="m">1</span><span class="p">)</span>
+        cat<span class="p">(</span><span class="s">&quot;Base&quot;</span><span class="p">,</span> i<span class="p">,</span> <span class="s">&quot;is&quot;</span><span class="p">,</span> base.i<span class="p">,</span> <span class="s">&quot;under&quot;</span><span class="p">,</span> state.i<span class="p">,</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
+        out.state.path<span class="p">[</span>i<span class="p">]</span> <span class="o">&lt;-</span> state.i
+        out.seq.path<span class="p">[</span>i<span class="p">]</span> <span class="o">&lt;-</span> base.i
+        state0 <span class="o">&lt;-</span> state.i
+    <span class="p">}</span>
+    cat<span class="p">(</span><span class="s">&quot;Seq Path:&quot;</span><span class="p">,</span> na.omit<span class="p">(</span>out.seq.path<span class="p">),</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    cat<span class="p">(</span><span class="s">&quot;StatPath:&quot;</span><span class="p">,</span> na.omit<span class="p">(</span>out.state.path<span class="p">),</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    <span class="kr">return</span><span class="p">(</span><span class="m">1</span><span class="p">)</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </div>
