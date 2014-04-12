@@ -203,6 +203,7 @@ Given the observed sequence of 26nt, how likely do you think is the state path a
 26nt sequence has 26 emissions and 27 transitions (note the final end state).
 
 See ``ComputeStatePathProb`` function for details and it could yield: 
+
 .. code-block:: r
 	> demo.seq.path <- c("CTTCATGTGAAAGCAGACGTAAGTCA")
 	> demo.state.path <- c("EEEEEEEEEEEEEEEEEE5IIIIIII")
