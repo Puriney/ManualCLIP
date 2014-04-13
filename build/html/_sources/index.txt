@@ -16,8 +16,6 @@ The book is deployed at `Readthedocs.org <http://a-little-book-about-clip-seq.re
 
 Book source at Github: https://github.com/Puriney/ManualCLIP 
 
-.. _site-docs:
-
 .. toctree::
    :maxdepth: 2
 

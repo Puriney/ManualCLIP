@@ -3,11 +3,12 @@ Model and Predict RBP Binding Preference
 
 With methods mentioned in previous chapter we could hopefully distinguish the informative signals from the sequencing noises. Results achieved at this step could be enough for most exploratory researches. However, what if we take a further step? What could we learn from the confident results? Could we learn about the binding preference of RNA binding proteins and construct models to unveil why RBP binds here but not there? Could we even predict the global binding sites of RBP? It does not necessarily means making CLIP-seq *in silico* possible, but machine learning methods could yield promising supplement to the real signals which could be left out by the empirical thresholding. 
 
+.. _c20-HMM:
 
 Hidden Markov Model
 -------------------------
 
-In the beginning of this section I would like to introduce HMM by a toy application: 5' end splicing site recognition, which was originated from NBT paper [Eddy2004]_. Admittedly this toy HMM is naive, it hopefully could help you take first step knowing how to infer the most possible splicing site, simply starting from raw DNA/RNA sequence together with some prior knowledges. For now we begin with the sequence: *CTTCATGTGAAAGCAGACGTAAGTCA*. Series of ideas and concepts would be illustrated step by step so that you could see how the biological question was translated to mathematical questions. Hopefully after you have known HMM I would introduce how HMM was employed in RBP science researches. 
+In the beginning of this section I would like to introduce HMM by a toy application: 5' end splicing site recognition, which was originated from NBT paper [Eddy2004]_. Admittedly this toy HMM is naive, it hopefully could help you take first step knowing how to infer the most possible splicing site, simply starting from raw DNA/RNA sequence together with some prior knowledges. For now we begin with the sequence: *CTTCATGTGAAAGCAGACGTAAGTCA*. Series of ideas and concepts would be illustrated step by step so that you could see how the biological question was translated to mathematical questions. Hopefully after you have known HMM I would introduce how HMM was employed in RBP science researches ([Zhang2013]_ and [Han2014]_). 
 
 Sequence Path v.s. State Path
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -268,18 +269,45 @@ So far hopefully you have understood the principles of HMM. Obviously we cannot 
 Viterbi algorithm
 """"""""""""""""""""
 
+Estimate HMM
+^^^^^^^^^^^^^^^^^^^
+
+`GEO data <http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19323>`_ : 
+
+Supervised Learning
+""""""""""""""""""""
+
+Unsupervised Learning
+"""""""""""""""""""""
+
+- HMM package. Super-easy to use. But when inferring the parameters of HMM, the observation can only be one. BAD one. I thought it is even dead end. 
+- RHmm Good one
+- depmixS4
+- mhsmm
+
+.. _c20-SVM:
+
 SVM
 -------------------------
 
+.. _c20-GraphKernel: 
+
 Graph Kernel
 -------------------------
+
+.. _c20-RandomForest:
 
 Random Forest
 -------------------------
 
 References
 -------------------------
+
 .. [Eddy2004] Eddy, S. R. What is a hidden Markov model? Nat. Biotechnol. 22, 1315–1316 (2004).
+
+.. [Zhang2013] Zhang, Chaolin, et al. "Prediction of clustered RNA-binding protein motif sites in the mammalian genome." Nucleic acids research 41.14 (2013): 6793-6807.
+
+.. [Han2014] Han, Areum, et al. "De Novo Prediction of PTBP1 Binding and Splicing Targets Reveals Unexpected Features of Its RNA Recognition and Function." PLOS Computational Biology 10.1 (2014).
 
 Source Scripts
 -------------------------

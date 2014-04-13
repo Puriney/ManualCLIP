@@ -111,8 +111,8 @@
 <h1>Model and Predict RBP Binding Preference<a class="headerlink" href="#model-and-predict-rbp-binding-preference" title="Permalink to this headline">¶</a></h1>
 <p>With methods mentioned in previous chapter we could hopefully distinguish the informative signals from the sequencing noises. Results achieved at this step could be enough for most exploratory researches. However, what if we take a further step? What could we learn from the confident results? Could we learn about the binding preference of RNA binding proteins and construct models to unveil why RBP binds here but not there? Could we even predict the global binding sites of RBP? It does not necessarily means making CLIP-seq <em>in silico</em> possible, but machine learning methods could yield promising supplement to the real signals which could be left out by the empirical thresholding.</p>
 <div class="section" id="hidden-markov-model">
-<h2>Hidden Markov Model<a class="headerlink" href="#hidden-markov-model" title="Permalink to this headline">¶</a></h2>
-<p>In the beginning of this section I would like to introduce HMM by a toy application: 5&#8217; end splicing site recognition, which was originated from NBT paper <a class="reference internal" href="#eddy2004" id="id1">[Eddy2004]</a>. Admittedly this toy HMM is naive, it hopefully could help you take first step knowing how to infer the most possible splicing site, simply starting from raw DNA/RNA sequence together with some prior knowledges. For now we begin with the sequence: <em>CTTCATGTGAAAGCAGACGTAAGTCA</em>. Series of ideas and concepts would be illustrated step by step so that you could see how the biological question was translated to mathematical questions. Hopefully after you have known HMM I would introduce how HMM was employed in RBP science researches.</p>
+<span id="c20-hmm"></span><h2>Hidden Markov Model<a class="headerlink" href="#hidden-markov-model" title="Permalink to this headline">¶</a></h2>
+<p>In the beginning of this section I would like to introduce HMM by a toy application: 5&#8217; end splicing site recognition, which was originated from NBT paper <a class="reference internal" href="#eddy2004" id="id1">[Eddy2004]</a>. Admittedly this toy HMM is naive, it hopefully could help you take first step knowing how to infer the most possible splicing site, simply starting from raw DNA/RNA sequence together with some prior knowledges. For now we begin with the sequence: <em>CTTCATGTGAAAGCAGACGTAAGTCA</em>. Series of ideas and concepts would be illustrated step by step so that you could see how the biological question was translated to mathematical questions. Hopefully after you have known HMM I would introduce how HMM was employed in RBP science researches (<a class="reference internal" href="#zhang2013" id="id2">[Zhang2013]</a> and <a class="reference internal" href="#han2014" id="id3">[Han2014]</a>).</p>
 <div class="section" id="sequence-path-v-s-state-path">
 <h3>Sequence Path v.s. State Path<a class="headerlink" href="#sequence-path-v-s-state-path" title="Permalink to this headline">¶</a></h3>
 <p>Sequence could be read by sequencing and thus observed. Each nucleotide residing on the DNA string belongs to some bio-functional regions. They are exons to be transcribed in the mature RNA, introns to be spliced out and splicing site, the boundary of exon and intron. These regions of different functions could be described as different states.</p>
@@ -201,7 +201,7 @@ E
 <p>Next before generating sequences and of course state path we need make the emission and transition probabilities to the full story:</p>
 <div class="figure align-center">
 <a class="reference internal image-reference" href="_images/HMMandSplicingSite_Mx.png"><img alt="_images/HMMandSplicingSite_Mx.png" src="_images/HMMandSplicingSite_Mx.png" /></a>
-<p class="caption">Diagram showing emission and transition probabilities matrix <a class="reference internal" href="#eddy2004" id="id2">[Eddy2004]</a>.</p>
+<p class="caption">Diagram showing emission and transition probabilities matrix <a class="reference internal" href="#eddy2004" id="id4">[Eddy2004]</a>.</p>
 </div>
 <p>In particular there are additional &#8220;Start&#8221; and &#8220;End&#8221; states for model purpose. These two states have no base assignment and they serve as the <tt class="docutils literal"><span class="pre">^</span></tt> and <tt class="docutils literal"><span class="pre">$</span></tt> in the regular expression in programming. In the figure the transition probability from &#8220;Start&#8221; to &#8220;Exon&#8221; state is <tt class="docutils literal"><span class="pre">1.0</span></tt> which means in our toy example here we are going to generate sequence starting with &#8220;Exon&#8221;. Likewise the probability of continuing &#8220;Intron&#8221; is <tt class="docutils literal"><span class="pre">0.9</span></tt>.</p>
 <p>The full emission probabilities matrix would be:</p>
@@ -327,20 +327,32 @@ Posterior Decoding<span class="o">:</span>  <span class="m">0.461971754327234</s
 </div>
 </div>
 <div class="section" id="svm">
-<h2>SVM<a class="headerlink" href="#svm" title="Permalink to this headline">¶</a></h2>
+<span id="c20-svm"></span><h2>SVM<a class="headerlink" href="#svm" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="graph-kernel">
-<h2>Graph Kernel<a class="headerlink" href="#graph-kernel" title="Permalink to this headline">¶</a></h2>
+<span id="c20-graphkernel"></span><h2>Graph Kernel<a class="headerlink" href="#graph-kernel" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="random-forest">
-<h2>Random Forest<a class="headerlink" href="#random-forest" title="Permalink to this headline">¶</a></h2>
+<span id="c20-randomforest"></span><h2>Random Forest<a class="headerlink" href="#random-forest" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="references">
 <h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
 <table class="docutils citation" frame="void" id="eddy2004" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label">[Eddy2004]</td><td><em>(<a class="fn-backref" href="#id1">1</a>, <a class="fn-backref" href="#id2">2</a>)</em> Eddy, S. R. What is a hidden Markov model? Nat. Biotechnol. 22, 1315–1316 (2004).</td></tr>
+<tr><td class="label">[Eddy2004]</td><td><em>(<a class="fn-backref" href="#id1">1</a>, <a class="fn-backref" href="#id4">2</a>)</em> Eddy, S. R. What is a hidden Markov model? Nat. Biotechnol. 22, 1315–1316 (2004).</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="zhang2013" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Zhang2013]</a></td><td>Zhang, Chaolin, et al. &#8220;Prediction of clustered RNA-binding protein motif sites in the mammalian genome.&#8221; Nucleic acids research 41.14 (2013): 6793-6807.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="han2014" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[Han2014]</a></td><td>Han, Areum, et al. &#8220;De Novo Prediction of PTBP1 Binding and Splicing Targets Reveals Unexpected Features of Its RNA Recognition and Function.&#8221; PLOS Computational Biology 10.1 (2014).</td></tr>
 </tbody>
 </table>
 </div>
