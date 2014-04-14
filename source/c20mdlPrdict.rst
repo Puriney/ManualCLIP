@@ -269,8 +269,8 @@ So far hopefully you have understood the principles of HMM. Obviously we cannot 
 Viterbi algorithm
 """"""""""""""""""""
 
-Estimate HMM
-^^^^^^^^^^^^^^^^^^^
+Estimate HMM in action
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 In the 5'-end splicing end recognition toy model, the emission and transition probabilities are presumed so that we could estimate the most possible state path which is the best explanation for the observed sequence. 
 

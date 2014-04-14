@@ -263,7 +263,7 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-rst_prolog = """
-.. role:: underline
-.. role:: strike
-"""
+#rst_prolog = """
+#.. role:: underline
+#.. role:: strike
+#"""
