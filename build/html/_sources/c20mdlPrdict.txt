@@ -274,17 +274,14 @@ Estimate HMM
 
 In the 5'-end splicing end recognition toy model, the emission and transition probabilities are presumed so that we could estimate the most possible state path which is the best explanation for the observed sequence. 
 
-But the question is where we could know about the emission and transition probabilities of HMM before we tackle HMM? How could we learn the parameters of HMM? To solutions to this question would be split into two branches supervised learnings and unsupervised learnings. The algorithms behind these would be introduced and luckily there are several ``R`` packages that associate with HMM. 
+But the question is where we could know about the emission and transition probabilities of HMM before we tackle HMM? How could we learn the parameters of HMM? The solutions to this question would be split into two branches: supervised learnings and unsupervised learnings. The algorithms behind these would be introduced in the following. Luckily there are several convenient ``R`` packages that associate with HMM. 
 
-- HMM package. 
-.. Super-easy to use. But when inferring the parameters of HMM, the observation can only be one. BAD one. I thought it is even dead end. 
-- RHmm Good one
-- depmixS4
-- mhsmm
+* HMM
+* RHmm
+* depmixS4
+* mhsmm
 
-During this chapter ``RHmm`` was used to demonstrate how to estimate parameters (:math:`\theta` ) of HMM in real scientific researches [Han2014]_. 
-
-`GEO data <http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19323>`_ : 
+.. Super-easy to use. But when inferring the parameters of HMM, the observation can only be one. *AD one. I thought it is even dead end. 
 
 Supervised Learning
 """"""""""""""""""""
@@ -292,6 +289,108 @@ Supervised Learning
 Unsupervised Learning
 """""""""""""""""""""
 
+To model PTB binding preference, two-state HMM was designed based on triplets in order to assess whether 3nt motif would segregate into two states and whether these two states had distinct emission probabilities [Han2014]_. We could implement the codes to reproduce the results by using ``RHmm`` package with the following brief analysis pipeline: 
+
+- Raw data retrieve and munging; 
+- Construct observed sequence path for each read; 
+- Design two-state HMM; 
+- Estimate emission and transition probabilities, the parameters (:math:`\theta` ) of HMM; 
+- Visualization of results. 
+
+If you are not interested in data cleaning which ironically takes up 90% of time of most data scientists, you could jump to HMM estimation. 
+
+:underline:`CLIP-seq Data Retrieve`. PTB CLIP-seq sequencing reads were mapped to hg17 and adapted to hg18 in the latest `GEO data <http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19323>`_ . Author had kindly provided the genome coordinations of CLIP-seq peak clusters so that we could easily fetch the genome and transcript sequence of CLIP-seq clusters by using ``Bioconductor``. 
+
+.. literalinclude:: _scripts/c20HMM/c20HMM_PTB_get_data.R
+    :language: r
+
+:underline:`Cook Observed Sequence Path`. For each read the sequence is continuously string, for example *ACTGATCGG* string and they are not triplet-sequence: *ACT GAT CGG*. In addition the format of cluster sequence is still in DNA, not RNA. Therefore one more step is needed to cook data. 
+
+.. literalinclude:: _scripts/c20HMM/c20HMM_PTB_cook_data.R
+    :language: r
+
+:underline:`Design HMM`. Two-state HMM was designed: binding state or non-binding state. 
+
+.. figure:: _static/c20HMM_PTB.png
+	:width: 600
+	:align: center
+
+	PTBP1 protein binding model. A: Two-states HMM was designed and successfully trained. Transition probabilities was shown. B: Emission probabilities of the two states had different preference to triplets. 
+
+We are trying to reproduce it. 
+
+:underline:`Estimation`. 
+
+.. literalinclude:: _scripts/c20HMM/c20HMM_PTB_estimate_model.R
+    :language: r
+
+As a result we have estimated the parameters of HMM modeling PTB binding preferences. 
+
+.. code-block:: r
+
+	> ptb.HMM.estimated$HMM
+
+	Model:
+	------
+	2 states HMM with discrete distribution
+
+	Initial probabilities:
+	       Pi 1      Pi 2
+	  0.3279376 0.6720624
+
+	Transition matrix:
+	          State 1   State 2
+	State 1 0.8124988 0.1875012
+	State 2 0.7279489 0.2720511
+
+	Conditionnal distribution parameters:
+
+	Distribution parameters:
+	                AAA        AAC         AAG         AAU         ACA         ACC
+	State 1 0.002053805 0.00171227 0.002921558 0.004062008 0.001702238 0.004119598
+	State 2 0.026659666 0.02669045 0.018581166 0.029270826 0.024849193 0.019070079
+	                 ACG         ACU         AGA         AGC         AGG
+	State 1 0.0009545203 0.007847316 0.003571282 0.005141578 0.004968771
+	State 2 0.0042811116 0.049837123 0.016124514 0.014469545 0.015340024
+	                AGU         AUA        AUC         AUG        AUU         CAA
+	State 1 0.007489506 0.003924728 0.01476462 0.005052538 0.01347329 0.005563721
+	State 2 0.019660018 0.015210379 0.03463434 0.025846413 0.04669401 0.013701655
+	                CAC        CAG        CAU         CCA        CCC          CCG
+	State 1 0.007087994 0.01072144 0.01785467 0.013107710 0.01146904 0.0036611494
+	State 2 0.020376993 0.01442269 0.02483846 0.003294134 0.00473662 0.0002132302
+	               CCU          CGA          CGC          CGG         CGU
+	State 1 0.03117673 0.0013737549 0.0027200873 4.233660e-03 0.005146979
+	State 2 0.02154137 0.0007451607 0.0002868091 1.914924e-05 0.001748012
+	                CUA        CUC         CUG        CUU         GAA         GAC
+	State 1 0.016619599 0.04564824 0.044308856 0.06249475 0.005378598 0.003293537
+	State 2 0.008393343 0.01467510 0.007747943 0.01867869 0.011986162 0.011816205
+	                GAG         GAU         GCA         GCC         GCG        GCU
+	State 1 0.005374742 0.006428859 0.006176074 0.007123844 0.001613111 0.01686248
+	State 2 0.007391663 0.013159560 0.008755279 0.010752949 0.001284622 0.02543406
+	                GGA         GGC         GGG         GGU         GUA        GUC
+	State 1 0.007897306 0.008914374 0.008259496 0.021292694 0.008996625 0.02168497
+	State 2 0.003091445 0.003453484 0.002429911 0.001723835 0.003756899 0.02106414
+	                GUG        GUU          UAA         UAC          UAG
+	State 1 0.018862773 0.02229759 0.0008606254 0.001296163 0.0007859372
+	State 2 0.005962911 0.02446250 0.0347718127 0.042850016 0.0336709869
+	                UAU         UCA         UCC         UCG        UCU        UGA
+	State 1 0.009279143 0.029338790 0.033592568 0.006527562 0.09150535 0.01019676
+	State 2 0.053780320 0.004609686 0.008172366 0.000611805 0.02612267 0.02084916
+	               UGC        UGG        UGU         UUA         UUC         UUG
+	State 1 0.01901294 0.02669897 0.03650746 0.017918991 0.070980521 0.035614819
+	State 2 0.01816547 0.00453399 0.03746990 0.001830695 0.005125166 0.001564879
+	                UUU
+	State 1 0.072478344
+	State 2 0.006707263
+
+:underline:`Visualization`. 
+
+.. literalinclude:: _scripts/c20HMM/c20HMM_PTB_visualize_model.R
+    :language: r
+
+.. figure:: _static/c20_PTB_estimated_emis.png
+	:scale: 50 %
+	:align: center
 
 
 .. _c20-SVM:
@@ -317,9 +416,3 @@ References
 .. [Zhang2013] Zhang, Chaolin, et al. "Prediction of clustered RNA-binding protein motif sites in the mammalian genome." Nucleic acids research 41.14 (2013): 6793-6807.
 
 .. [Han2014] Han, Areum, et al. "De Novo Prediction of PTBP1 Binding and Splicing Targets Reveals Unexpected Features of Its RNA Recognition and Function." PLOS Computational Biology 10.1 (2014).
-
-Source Scripts
--------------------------
-
-.. literalinclude:: _scripts/c20HMM_Wheel.R
-    :language: r

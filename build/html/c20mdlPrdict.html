@@ -10,6 +10,7 @@
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/my_style.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -82,7 +83,6 @@
 <li><a class="reference internal" href="#graph-kernel">Graph Kernel</a></li>
 <li><a class="reference internal" href="#random-forest">Random Forest</a></li>
 <li><a class="reference internal" href="#references">References</a></li>
-<li><a class="reference internal" href="#source-scripts">Source Scripts</a></li>
 </ul>
 </li>
 </ul>
@@ -340,22 +340,226 @@ Posterior Decoding<span class="o">:</span>  <span class="m">0.461971754327234</s
 <div class="section" id="estimate-hmm">
 <h3>Estimate HMM<a class="headerlink" href="#estimate-hmm" title="Permalink to this headline">¶</a></h3>
 <p>In the 5&#8217;-end splicing end recognition toy model, the emission and transition probabilities are presumed so that we could estimate the most possible state path which is the best explanation for the observed sequence.</p>
-<p>But the question is where we could know about the emission and transition probabilities of HMM before we tackle HMM? How could we learn the parameters of HMM? To solutions to this question would be split into two branches supervised learnings and unsupervised learnings. The algorithms behind these would be introduced and luckily there are several <tt class="docutils literal"><span class="pre">R</span></tt> packages that associate with HMM.</p>
+<p>But the question is where we could know about the emission and transition probabilities of HMM before we tackle HMM? How could we learn the parameters of HMM? The solutions to this question would be split into two branches: supervised learnings and unsupervised learnings. The algorithms behind these would be introduced in the following. Luckily there are several convenient <tt class="docutils literal"><span class="pre">R</span></tt> packages that associate with HMM.</p>
 <ul class="simple">
-<li>HMM package.</li>
-</ul>
-<ul class="simple">
-<li>RHmm Good one</li>
+<li>HMM</li>
+<li>RHmm</li>
 <li>depmixS4</li>
 <li>mhsmm</li>
 </ul>
-<p>During this chapter <tt class="docutils literal"><span class="pre">RHmm</span></tt> was used to demonstrate how to estimate parameters (<span class="math">\(\theta\)</span> ) of HMM in real scientific researches <a class="reference internal" href="#han2014" id="id5">[Han2014]</a>.</p>
-<p><a class="reference external" href="http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19323">GEO data</a> :</p>
 <div class="section" id="supervised-learning">
 <h4>Supervised Learning<a class="headerlink" href="#supervised-learning" title="Permalink to this headline">¶</a></h4>
 </div>
 <div class="section" id="unsupervised-learning">
 <h4>Unsupervised Learning<a class="headerlink" href="#unsupervised-learning" title="Permalink to this headline">¶</a></h4>
+<p>To model PTB binding preference, two-state HMM was designed based on triplets in order to assess whether 3nt motif would segregate into two states and whether these two states had distinct emission probabilities <a class="reference internal" href="#han2014" id="id5">[Han2014]</a>. We could implement the codes to reproduce the results by using <tt class="docutils literal"><span class="pre">RHmm</span></tt> package with the following brief analysis pipeline:</p>
+<ul class="simple">
+<li>Raw data retrieve and munging;</li>
+<li>Construct observed sequence path for each read;</li>
+<li>Design two-state HMM;</li>
+<li>Estimate emission and transition probabilities, the parameters (<span class="math">\(\theta\)</span> ) of HMM;</li>
+<li>Visualization of results.</li>
+</ul>
+<p>If you are not interested in data cleaning which ironically takes up 90% of time of most data scientists, you could jump to HMM estimation.</p>
+<p><span class="underline">CLIP-seq Data Retrieve</span>. PTB CLIP-seq sequencing reads were mapped to hg17 and adapted to hg18 in the latest <a class="reference external" href="http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19323">GEO data</a> . Author had kindly provided the genome coordinations of CLIP-seq peak clusters so that we could easily fetch the genome and transcript sequence of CLIP-seq clusters by using <tt class="docutils literal"><span class="pre">Bioconductor</span></tt>.</p>
+<div class="highlight-r"><div class="highlight"><pre><span class="c1">## ---------------------</span>
+<span class="c1">## PTB CLIP-seq data</span>
+<span class="c1">## ---------------------</span>
+<span class="c1">## ---------------------</span>
+<span class="c1">## Data retrieve and processing</span>
+<span class="c1">## ---------------------</span>
+
+<span class="c1">## Genome fasta</span>
+source<span class="p">(</span><span class="s">&quot;http://bioconductor.org/biocLite.R&quot;</span><span class="p">)</span>
+biocLite<span class="p">(</span><span class="s">&quot;BSgenome.Hsapiens.UCSC.hg18&quot;</span><span class="p">)</span> 
+<span class="c1"># ~800Mb, or alternatively download and install the souce pkg</span>
+<span class="c1"># my.cmd &lt;- &quot;axel http://www.bioconductor.org/packages/release/data/annotation/src/contrib/BSgenome.Hsapiens.UCSC.hg18_1.3.19.tar.gz&quot; </span>
+<span class="c1"># system(my.cmd)</span>
+<span class="c1"># install.packages(&quot;BSgenome.Hsapiens.UCSC.hg18_1.3.19.tar.gz&quot;, repos = NULL, type = &quot;source&quot;)</span>
+library<span class="p">(</span><span class="s">&quot;BSgenome.Hsapiens.UCSC.hg18&quot;</span><span class="p">)</span>
+hg18.genome <span class="o">&lt;-</span> BSgenome.Hsapiens.UCSC.hg18
+
+<span class="c1">## Peak bed corrdinates</span>
+download.file<span class="p">(</span>url <span class="o">=</span> <span class="s">&quot;ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE19nnn/GSE19323/suppl/GSE19323_ptb_peak_cluster.bed.gz&quot;</span><span class="p">,</span> destfile <span class="o">=</span> <span class="s">&quot;ptb_peak_bed.gz&quot;</span><span class="p">)</span>
+my.cmd <span class="o">&lt;-</span> <span class="s">&quot;gunzip ptb_peak_bed.gz&quot;</span> <span class="c1"># file.name would be ptb_peak_bed</span>
+system<span class="p">(</span>my.cmd<span class="p">)</span>
+ptb.peak <span class="o">&lt;-</span> read.table<span class="p">(</span>file <span class="o">=</span> <span class="s">&quot;ptb_peak_bed&quot;</span><span class="p">,</span> header <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span>
+head<span class="p">(</span>ptb.peak<span class="p">)</span>
+colnames<span class="p">(</span>ptb.peak<span class="p">)</span> <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;Chr&quot;</span><span class="p">,</span> <span class="s">&quot;Start&quot;</span><span class="p">,</span> <span class="s">&quot;End&quot;</span><span class="p">,</span> <span class="s">&quot;Peak&quot;</span><span class="p">,</span> <span class="s">&quot;Height&quot;</span><span class="p">,</span> <span class="s">&quot;Strand&quot;</span><span class="p">)</span>
+neg.indices <span class="o">&lt;-</span> which<span class="p">(</span>ptb.peak<span class="p">[,</span> <span class="m">6</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;-&quot;</span><span class="p">)</span>
+
+<span class="c1">## Fetch CLIP-seq Cluster Sequence</span>
+library<span class="p">(</span><span class="s">&quot;GenomicRanges&quot;</span><span class="p">)</span>
+ptb.peak.GRobj <span class="o">&lt;-</span> GRanges<span class="p">(</span>seqnames <span class="o">=</span> Rle<span class="p">(</span>as.character<span class="p">(</span>ptb.peak<span class="p">[,</span> <span class="m">1</span><span class="p">])),</span> 
+                          ranges <span class="o">=</span> IRanges<span class="p">(</span>ptb.peak<span class="p">[,</span> <span class="m">2</span><span class="p">],</span> 
+                                           ptb.peak<span class="p">[,</span> <span class="m">3</span><span class="p">],</span>
+                                           names <span class="o">=</span> ptb.peak<span class="p">[,</span> <span class="m">4</span><span class="p">]),</span> 
+                          strand <span class="o">=</span> Rle<span class="p">(</span>ptb.peak<span class="p">[,</span> <span class="m">6</span><span class="p">]))</span>
+ptb.peak.seq <span class="o">&lt;-</span> getSeq<span class="p">(</span>hg18.genome<span class="p">,</span> seqnames<span class="p">(</span>ptb.peak.GRobj<span class="p">),</span> 
+                       start<span class="p">(</span>ptb.peak.GRobj<span class="p">),</span> 
+                       end<span class="p">(</span>ptb.peak.GRobj<span class="p">))</span> <span class="c1">## raw genome seq</span>
+ptb.peak.seq<span class="p">[</span>neg.indices<span class="p">]</span> <span class="o">&lt;-</span> reverseComplement<span class="p">(</span>ptb.peak.rna<span class="p">[</span>neg.indices<span class="p">])</span> <span class="c1">## transcript sequence </span>
+</pre></div>
+</div>
+<p><span class="underline">Cook Observed Sequence Path</span>. For each read the sequence is continuously string, for example <em>ACTGATCGG</em> string and they are not triplet-sequence: <em>ACT GAT CGG</em>. In addition the format of cluster sequence is still in DNA, not RNA. Therefore one more step is needed to cook data.</p>
+<div class="highlight-r"><div class="highlight"><pre><span class="c1">## Cook to observations</span>
+library<span class="p">(</span><span class="s">&quot;plyr&quot;</span><span class="p">)</span>
+library<span class="p">(</span><span class="s">&quot;snowfall&quot;</span><span class="p">)</span>
+ptb.peak.seq <span class="o">&lt;-</span> as.list<span class="p">(</span>as.character<span class="p">(</span>ptb.peak.seq<span class="p">))</span>
+Seq2Obv <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>dataList<span class="p">,</span> size<span class="p">)</span> <span class="p">{</span>
+    pass.indices <span class="o">&lt;-</span> sapply<span class="p">(</span>dataList<span class="p">,</span> nchar<span class="p">)</span>
+    dataList <span class="o">&lt;-</span> dataList<span class="p">[</span>pass.indices <span class="o">&gt;=</span> size<span class="p">]</span>
+    dataList <span class="o">&lt;-</span> llply<span class="p">(</span>dataList<span class="p">,</span> <span class="kr">function</span><span class="p">(</span>ele<span class="p">)</span> <span class="p">{</span>
+        ele <span class="o">&lt;-</span> as.character<span class="p">(</span>dna2rna<span class="p">(</span>DNAString<span class="p">(</span>ele<span class="p">)))</span>
+        start.i <span class="o">&lt;-</span> <span class="m">1</span>
+        ele <span class="o">&lt;-</span> substring<span class="p">(</span>ele<span class="p">,</span> 
+                         seq<span class="p">(</span>start.i<span class="p">,</span> nchar<span class="p">(</span>ele<span class="p">),</span> size<span class="p">),</span> 
+                         seq<span class="p">((</span>start.i <span class="o">+</span> size <span class="o">-</span> start.i<span class="p">),</span> nchar<span class="p">(</span>ele<span class="p">),</span> size<span class="p">))</span>
+        <span class="kr">return</span><span class="p">(</span>ele<span class="p">[</span>ele <span class="o">!=</span> <span class="s">&quot;&quot;</span><span class="p">])</span>
+    <span class="p">})</span>
+    dataList
+<span class="p">}</span>
+
+Seq2ObvSuper <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>dataList<span class="p">,</span> size<span class="p">,</span> startChar<span class="p">)</span> <span class="p">{</span>
+    pass.indices <span class="o">&lt;-</span> sapply<span class="p">(</span>dataList<span class="p">,</span> nchar<span class="p">)</span>
+    dataList <span class="o">&lt;-</span> dataList<span class="p">[</span>pass.indices <span class="o">&gt;=</span> <span class="p">(</span>size <span class="o">+</span> startChar <span class="o">-</span> <span class="m">1</span><span class="p">)]</span>
+    dataList <span class="o">&lt;-</span> sfLapply<span class="p">(</span>dataList<span class="p">,</span> <span class="kr">function</span><span class="p">(</span>ele<span class="p">)</span> <span class="p">{</span>
+        ele <span class="o">&lt;-</span> as.character<span class="p">(</span>dna2rna<span class="p">(</span>DNAString<span class="p">(</span>ele<span class="p">)))</span>
+        start.i <span class="o">&lt;-</span> startChar
+        ele <span class="o">&lt;-</span> substring<span class="p">(</span>ele<span class="p">,</span> 
+                         seq<span class="p">(</span>start.i<span class="p">,</span> nchar<span class="p">(</span>ele<span class="p">),</span> size<span class="p">),</span> 
+                         seq<span class="p">((</span>size <span class="o">+</span> start.i <span class="o">-</span> <span class="m">1</span><span class="p">),</span> nchar<span class="p">(</span>ele<span class="p">),</span> size<span class="p">))</span>
+        <span class="kr">return</span><span class="p">(</span>ele<span class="p">[</span>ele <span class="o">!=</span> <span class="s">&quot;&quot;</span><span class="p">])</span>
+    <span class="p">})</span>
+    dataList
+<span class="p">}</span>
+
+ptb.peak.obv1 <span class="o">&lt;-</span> Seq2ObvSuper<span class="p">(</span>ptb.peak.seq<span class="p">,</span> size <span class="o">=</span> <span class="m">3</span><span class="p">,</span> startChar <span class="o">=</span> <span class="m">1</span><span class="p">)</span>
+ptb.peak.obv2 <span class="o">&lt;-</span> Seq2ObvSuper<span class="p">(</span>ptb.peak.seq<span class="p">,</span> size <span class="o">=</span> <span class="m">3</span><span class="p">,</span> startChar <span class="o">=</span> <span class="m">2</span><span class="p">)</span>
+ptb.peak.obv3 <span class="o">&lt;-</span> Seq2ObvSuper<span class="p">(</span>ptb.peak.seq<span class="p">,</span> size <span class="o">=</span> <span class="m">3</span><span class="p">,</span> startChar <span class="o">=</span> <span class="m">3</span><span class="p">)</span>
+ptb.peak.obvFull <span class="o">&lt;-</span> c<span class="p">(</span>ptb.peak.obv1<span class="p">,</span> ptb.peak.obv2<span class="p">,</span> ptb.peak.obv3<span class="p">)</span>
+</pre></div>
+</div>
+<p><span class="underline">Design HMM</span>. Two-state HMM was designed: binding state or non-binding state.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/c20HMM_PTB.png"><img alt="_images/c20HMM_PTB.png" src="_images/c20HMM_PTB.png" style="width: 600px;" /></a>
+<p class="caption">PTBP1 protein binding model. A: Two-states HMM was designed and successfully trained. Transition probabilities was shown. B: Emission probabilities of the two states had different preference to triplets.</p>
+</div>
+<p>We are trying to reproduce it.</p>
+<p><span class="underline">Estimation</span>.</p>
+<div class="highlight-r"><div class="highlight"><pre><span class="c1">## -----------------------------</span>
+<span class="c1">## Estimate HMM of PTB</span>
+<span class="c1">## -----------------------------</span>
+require<span class="p">(</span><span class="s">&quot;RHmm&quot;</span><span class="p">)</span>
+ptb.HMM.estimated <span class="o">&lt;-</span> HMMFit<span class="p">(</span>ptb.peak.obvFull<span class="p">,</span> dis <span class="o">=</span> <span class="s">&quot;DISCRETE&quot;</span><span class="p">,</span> nStates <span class="o">=</span> <span class="m">2</span><span class="p">,</span>
+       control <span class="o">=</span> list<span class="p">(</span>init <span class="o">=</span> <span class="s">&quot;RANDOM&quot;</span><span class="p">))</span>
+ptb.HMM.estimated.maxLLH <span class="o">&lt;-</span> ptb.HMM.estimated<span class="o">$</span>LLH
+<span class="kr">for</span> <span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span><span class="m">20</span><span class="p">)</span> <span class="p">{</span>
+    ptb.HMM.estimated.each <span class="o">&lt;-</span> HMMFit<span class="p">(</span>ptb.peak.obvFull<span class="p">,</span> dis <span class="o">=</span> <span class="s">&quot;DISCRETE&quot;</span><span class="p">,</span> 
+                                     nStates <span class="o">=</span> <span class="m">2</span><span class="p">,</span> 
+                                     control <span class="o">=</span> list<span class="p">(</span>init <span class="o">=</span> <span class="s">&quot;RANDOM&quot;</span><span class="p">))</span>
+    ptb.HMM.estimated.each.LLH <span class="o">&lt;-</span> ptb.HMM.estimated.each<span class="o">$</span>LLH
+    cat<span class="p">(</span>ptb.HMM.estimated.maxLLH<span class="p">,</span> <span class="s">&quot;vs&quot;</span><span class="p">,</span> ptb.HMM.estimated.each.LLH<span class="p">,</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    <span class="kr">if</span> <span class="p">(</span>ptb.HMM.estimated.each.LLH <span class="o">&gt;</span> ptb.HMM.estimated.maxLLH<span class="p">)</span> <span class="p">{</span>
+        ptb.HMM.estimated <span class="o">&lt;-</span> ptb.HMM.estimated.each
+        ptb.HMM.estimated.maxLLH <span class="o">&lt;-</span> ptb.HMM.estimated.each.LLH
+    <span class="p">}</span>
+<span class="p">}</span>
+print<span class="p">(</span>ptb.HMM.estimated<span class="p">)</span>
+
+ptb.HMM.transMx <span class="o">&lt;-</span> ptb.HMM.estimated<span class="o">$</span>HMM<span class="o">$</span>transMat
+ptb.HMM.emisMx  <span class="o">&lt;-</span> ptb.HMM.estimated<span class="o">$</span>HMM<span class="o">$</span>distribution<span class="o">$</span>proba
+ptb.HMM.nStates <span class="o">&lt;-</span> ptb.HMM.estimated<span class="o">$</span>HMM<span class="o">$</span>distribution<span class="o">$</span>nStates
+ptb.HMM.nSymbols <span class="o">&lt;-</span> ptb.HMM.estimated<span class="o">$</span>HMM<span class="o">$</span>distribution<span class="o">$</span>nLevels
+ptb.HMM.symbols <span class="o">&lt;-</span> names<span class="p">(</span>ptb.HMM.emisMx<span class="p">[[</span>ptb.HMM.nStates<span class="p">]])</span>
+ptb.HMM.emisMx  <span class="o">&lt;-</span> matrix<span class="p">(</span>unlist<span class="p">(</span>ptb.HMM.emisMx<span class="p">),</span> byrow <span class="o">=</span> <span class="k-Variable">T</span><span class="p">,</span> 
+                          ncol <span class="o">=</span> ptb.HMM.nSymbols<span class="p">,</span> 
+                          nrow <span class="o">=</span> ptb.HMM.nStates<span class="p">)</span>
+colnames<span class="p">(</span>ptb.HMM.emisMx<span class="p">)</span> <span class="o">&lt;-</span> ptb.HMM.symbols
+row.names<span class="p">(</span>ptb.HMM.emisMx<span class="p">)</span> <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;State 1&quot;</span><span class="p">,</span> <span class="s">&quot;State 2&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>As a result we have estimated the parameters of HMM modeling PTB binding preferences.</p>
+<div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> ptb.HMM.estimated<span class="o">$</span>HMM
+
+Model<span class="o">:</span>
+<span class="o">------</span>
+<span class="m">2</span> states HMM with discrete distribution
+
+Initial probabilities<span class="o">:</span>
+       Pi <span class="m">1</span>      Pi <span class="m">2</span>
+  <span class="m">0.3279376</span> <span class="m">0.6720624</span>
+
+Transition matrix<span class="o">:</span>
+          State <span class="m">1</span>   State <span class="m">2</span>
+State <span class="m">1</span> <span class="m">0.8124988</span> <span class="m">0.1875012</span>
+State <span class="m">2</span> <span class="m">0.7279489</span> <span class="m">0.2720511</span>
+
+Conditionnal distribution parameters<span class="o">:</span>
+
+Distribution parameters<span class="o">:</span>
+                AAA        AAC         AAG         AAU         ACA         ACC
+State <span class="m">1</span> <span class="m">0.002053805</span> <span class="m">0.00171227</span> <span class="m">0.002921558</span> <span class="m">0.004062008</span> <span class="m">0.001702238</span> <span class="m">0.004119598</span>
+State <span class="m">2</span> <span class="m">0.026659666</span> <span class="m">0.02669045</span> <span class="m">0.018581166</span> <span class="m">0.029270826</span> <span class="m">0.024849193</span> <span class="m">0.019070079</span>
+                 ACG         ACU         AGA         AGC         AGG
+State <span class="m">1</span> <span class="m">0.0009545203</span> <span class="m">0.007847316</span> <span class="m">0.003571282</span> <span class="m">0.005141578</span> <span class="m">0.004968771</span>
+State <span class="m">2</span> <span class="m">0.0042811116</span> <span class="m">0.049837123</span> <span class="m">0.016124514</span> <span class="m">0.014469545</span> <span class="m">0.015340024</span>
+                AGU         AUA        AUC         AUG        AUU         CAA
+State <span class="m">1</span> <span class="m">0.007489506</span> <span class="m">0.003924728</span> <span class="m">0.01476462</span> <span class="m">0.005052538</span> <span class="m">0.01347329</span> <span class="m">0.005563721</span>
+State <span class="m">2</span> <span class="m">0.019660018</span> <span class="m">0.015210379</span> <span class="m">0.03463434</span> <span class="m">0.025846413</span> <span class="m">0.04669401</span> <span class="m">0.013701655</span>
+                CAC        CAG        CAU         CCA        CCC          CCG
+State <span class="m">1</span> <span class="m">0.007087994</span> <span class="m">0.01072144</span> <span class="m">0.01785467</span> <span class="m">0.013107710</span> <span class="m">0.01146904</span> <span class="m">0.0036611494</span>
+State <span class="m">2</span> <span class="m">0.020376993</span> <span class="m">0.01442269</span> <span class="m">0.02483846</span> <span class="m">0.003294134</span> <span class="m">0.00473662</span> <span class="m">0.0002132302</span>
+               CCU          CGA          CGC          CGG         CGU
+State <span class="m">1</span> <span class="m">0.03117673</span> <span class="m">0.0013737549</span> <span class="m">0.0027200873</span> <span class="m">4.233660e-03</span> <span class="m">0.005146979</span>
+State <span class="m">2</span> <span class="m">0.02154137</span> <span class="m">0.0007451607</span> <span class="m">0.0002868091</span> <span class="m">1.914924e-05</span> <span class="m">0.001748012</span>
+                CUA        CUC         CUG        CUU         GAA         GAC
+State <span class="m">1</span> <span class="m">0.016619599</span> <span class="m">0.04564824</span> <span class="m">0.044308856</span> <span class="m">0.06249475</span> <span class="m">0.005378598</span> <span class="m">0.003293537</span>
+State <span class="m">2</span> <span class="m">0.008393343</span> <span class="m">0.01467510</span> <span class="m">0.007747943</span> <span class="m">0.01867869</span> <span class="m">0.011986162</span> <span class="m">0.011816205</span>
+                GAG         GAU         GCA         GCC         GCG        GCU
+State <span class="m">1</span> <span class="m">0.005374742</span> <span class="m">0.006428859</span> <span class="m">0.006176074</span> <span class="m">0.007123844</span> <span class="m">0.001613111</span> <span class="m">0.01686248</span>
+State <span class="m">2</span> <span class="m">0.007391663</span> <span class="m">0.013159560</span> <span class="m">0.008755279</span> <span class="m">0.010752949</span> <span class="m">0.001284622</span> <span class="m">0.02543406</span>
+                GGA         GGC         GGG         GGU         GUA        GUC
+State <span class="m">1</span> <span class="m">0.007897306</span> <span class="m">0.008914374</span> <span class="m">0.008259496</span> <span class="m">0.021292694</span> <span class="m">0.008996625</span> <span class="m">0.02168497</span>
+State <span class="m">2</span> <span class="m">0.003091445</span> <span class="m">0.003453484</span> <span class="m">0.002429911</span> <span class="m">0.001723835</span> <span class="m">0.003756899</span> <span class="m">0.02106414</span>
+                GUG        GUU          UAA         UAC          UAG
+State <span class="m">1</span> <span class="m">0.018862773</span> <span class="m">0.02229759</span> <span class="m">0.0008606254</span> <span class="m">0.001296163</span> <span class="m">0.0007859372</span>
+State <span class="m">2</span> <span class="m">0.005962911</span> <span class="m">0.02446250</span> <span class="m">0.0347718127</span> <span class="m">0.042850016</span> <span class="m">0.0336709869</span>
+                UAU         UCA         UCC         UCG        UCU        UGA
+State <span class="m">1</span> <span class="m">0.009279143</span> <span class="m">0.029338790</span> <span class="m">0.033592568</span> <span class="m">0.006527562</span> <span class="m">0.09150535</span> <span class="m">0.01019676</span>
+State <span class="m">2</span> <span class="m">0.053780320</span> <span class="m">0.004609686</span> <span class="m">0.008172366</span> <span class="m">0.000611805</span> <span class="m">0.02612267</span> <span class="m">0.02084916</span>
+               UGC        UGG        UGU         UUA         UUC         UUG
+State <span class="m">1</span> <span class="m">0.01901294</span> <span class="m">0.02669897</span> <span class="m">0.03650746</span> <span class="m">0.017918991</span> <span class="m">0.070980521</span> <span class="m">0.035614819</span>
+State <span class="m">2</span> <span class="m">0.01816547</span> <span class="m">0.00453399</span> <span class="m">0.03746990</span> <span class="m">0.001830695</span> <span class="m">0.005125166</span> <span class="m">0.001564879</span>
+                UUU
+State <span class="m">1</span> <span class="m">0.072478344</span>
+State <span class="m">2</span> <span class="m">0.006707263</span>
+</pre></div>
+</div>
+<p><span class="underline">Visualization</span>.</p>
+<div class="highlight-r"><div class="highlight"><pre><span class="c1">## -----------------------------</span>
+<span class="c1">## Visualize PTB HMM</span>
+<span class="c1">## -----------------------------</span>
+ptb.HMM.emisMx.order <span class="o">&lt;-</span> ptb.HMM.emisMx<span class="p">[,</span> order<span class="p">(</span>ptb.HMM.emisMx<span class="p">[</span><span class="m">1</span><span class="p">,</span> <span class="p">])]</span>
+library<span class="p">(</span>reshape2<span class="p">)</span>
+ptb.HMM.emisMx.order <span class="o">&lt;-</span> as.data.frame<span class="p">(</span>ptb.HMM.emisMx.order<span class="p">)</span>
+ptb.HMM.emisMx.order<span class="o">$</span>State <span class="o">&lt;-</span> row.names<span class="p">(</span>ptb.HMM.emisMx.order<span class="p">)</span>
+ptb.HMM.emisMx.order.melt <span class="o">&lt;-</span> melt<span class="p">(</span>ptb.HMM.emisMx.order<span class="p">,</span> id.vars <span class="o">=</span> <span class="s">&quot;State&quot;</span><span class="p">)</span>
+
+p <span class="o">&lt;-</span> ggplot<span class="p">(</span>data <span class="o">=</span> ptb.HMM.emisMx.order.melt<span class="p">,</span> 
+       aes<span class="p">(</span>x <span class="o">=</span> variable<span class="p">,</span> y <span class="o">=</span> value<span class="p">,</span> fill <span class="o">=</span> State<span class="p">))</span> <span class="o">+</span> 
+    geom_bar<span class="p">(</span>stat<span class="o">=</span><span class="s">&quot;identity&quot;</span><span class="p">,</span> position<span class="o">=</span>position_dodge<span class="p">())</span> <span class="o">+</span>
+    theme_bw<span class="p">()</span> <span class="o">+</span> 
+    theme<span class="p">(</span>text <span class="o">=</span> element_text<span class="p">(</span>family <span class="o">=</span> <span class="s">&quot;xkcd&quot;</span><span class="p">,</span> size <span class="o">=</span> <span class="m">20</span><span class="p">),</span> 
+          axis.text.x <span class="o">=</span> element_text<span class="p">(</span>angle <span class="o">=</span> <span class="m">90</span><span class="p">,</span> hjust <span class="o">=</span> <span class="m">1</span><span class="p">),</span> 
+          legend.justification <span class="o">=</span> c<span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">),</span> 
+          legend.position<span class="o">=</span>c<span class="p">(</span><span class="m">0.9</span><span class="p">,</span> <span class="m">0.7</span><span class="p">))</span> <span class="o">+</span> 
+    xlab<span class="p">(</span><span class="s">&quot;Triplet&quot;</span><span class="p">)</span> <span class="o">+</span> ylab<span class="p">(</span><span class="s">&quot;Emission Prob&quot;</span><span class="p">)</span>  
+</pre></div>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/c20_PTB_estimated_emis.png"><img alt="_images/c20_PTB_estimated_emis.png" src="_images/c20_PTB_estimated_emis.png" /></a>
+</div>
 </div>
 </div>
 </div>
@@ -388,140 +592,6 @@ Posterior Decoding<span class="o">:</span>  <span class="m">0.461971754327234</s
 <tr><td class="label">[Han2014]</td><td><em>(<a class="fn-backref" href="#id3">1</a>, <a class="fn-backref" href="#id5">2</a>)</em> Han, Areum, et al. &#8220;De Novo Prediction of PTBP1 Binding and Splicing Targets Reveals Unexpected Features of Its RNA Recognition and Function.&#8221; PLOS Computational Biology 10.1 (2014).</td></tr>
 </tbody>
 </table>
-</div>
-<div class="section" id="source-scripts">
-<h2>Source Scripts<a class="headerlink" href="#source-scripts" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-r"><div class="highlight"><pre><span class="c1">## ---------------</span>
-<span class="c1">## Scripts for c20_Model_HMM</span>
-<span class="c1">## Yun Yan &lt;yanyun@whu.edu.cn&gt;</span>
-<span class="c1">## ---------------</span>
-library<span class="p">(</span>ggplot2<span class="p">)</span>
-library<span class="p">(</span>xkcd<span class="p">)</span>
-dna.bases <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span> <span class="s">&quot;C&quot;</span><span class="p">,</span> <span class="s">&quot;G&quot;</span><span class="p">,</span> <span class="s">&quot;T&quot;</span><span class="p">)</span>
-seq.path <span class="o">&lt;-</span> <span class="s">&quot;CTTCATGTGAAAGCAGACGTAAGTCA&quot;</span>
-
-<span class="c1">## ----------------------------</span>
-<span class="c1">## Emission Prob Demo (Intron)</span>
-<span class="c1">## ----------------------------</span>
-<span class="c1">## Pre-settings</span>
-intron.emission.prob <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0.40</span><span class="p">,</span> <span class="m">0.10</span><span class="p">,</span> <span class="m">0.10</span><span class="p">,</span> <span class="m">0.40</span><span class="p">)</span>
-intron.emmision.matrix <span class="o">&lt;-</span> matrix<span class="p">(</span>intron.emission.prob<span class="p">,</span> nrow <span class="o">=</span> <span class="m">1</span><span class="p">,</span> byrow <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
-colnames<span class="p">(</span>intron.emmision.matrix<span class="p">)</span> <span class="o">&lt;-</span> dna.bases
-row.names<span class="p">(</span>intron.emmision.matrix<span class="p">)</span> <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;I&quot;</span><span class="p">)</span>
-<span class="c1">## Plot wheel of intron</span>
-intron.emmision.prob2 <span class="o">&lt;-</span> data.frame<span class="p">(</span>Base <span class="o">=</span> 
-                                        paste<span class="p">(</span>dna.bases<span class="p">,</span> 
-                                              as.character<span class="p">(</span>intron.emission.prob<span class="p">),</span>
-                                              sep<span class="o">=</span><span class="s">&quot;=&quot;</span><span class="p">),</span>
-                                    Prob <span class="o">=</span> intron.emission.prob<span class="p">)</span>
-p <span class="o">&lt;-</span> ggplot<span class="p">(</span>intron.emmision.prob2<span class="p">,</span> aes<span class="p">(</span>x<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> y<span class="o">=</span>Prob<span class="p">,</span> fill <span class="o">=</span> Base<span class="p">))</span> <span class="o">+</span> 
-        geom_bar<span class="p">(</span>width <span class="o">=</span> <span class="m">1</span><span class="p">)</span> <span class="o">+</span> 
-        coord_polar<span class="p">(</span><span class="s">&quot;y&quot;</span><span class="p">)</span> <span class="o">+</span> 
-        xlab<span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> ylab<span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> ggtitle<span class="p">(</span><span class="s">&#39;Intron Roulette Wheel&#39;</span><span class="p">)</span> <span class="o">+</span> 
-        labs<span class="p">(</span>fill<span class="o">=</span><span class="s">&quot;Base&quot;</span><span class="p">)</span> <span class="o">+</span> 
-        theme_xkcd<span class="p">()</span> <span class="o">+</span> 
-        theme<span class="p">(</span>axis.ticks<span class="o">=</span>element_blank<span class="p">(),</span> text <span class="o">=</span> element_text<span class="p">(</span>size <span class="o">=</span> <span class="m">30</span><span class="p">))</span> 
-p 
-<span class="c1">## Sample bases</span>
-set.seed<span class="p">(</span><span class="m">1026</span><span class="p">)</span>
-seq.len <span class="o">&lt;-</span> <span class="m">26</span>
-sample.seq <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> dna.bases<span class="p">,</span> prob <span class="o">=</span> intron.emission.prob<span class="p">,</span>
-                     size <span class="o">=</span> seq.len<span class="p">,</span> replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
-cat<span class="p">(</span>sample.seq<span class="p">,</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
-table<span class="p">(</span>sample.seq<span class="p">)</span>
-
-<span class="c1">## ----------------------------</span>
-<span class="c1">## Transition Prob Demo</span>
-<span class="c1">## ----------------------------</span>
-state.bases <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;E&quot;</span><span class="p">,</span> <span class="s">&quot;5&quot;</span><span class="p">,</span> <span class="s">&quot;I&quot;</span><span class="p">)</span>
-exon.transition.prob <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0.9</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
-exon.transition.matrix <span class="o">&lt;-</span> matrix<span class="p">(</span>exon.transition.prob<span class="p">,</span> nrow <span class="o">=</span> <span class="m">1</span><span class="p">,</span> byrow <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
-colnames<span class="p">(</span>exon.transition.matrix<span class="p">)</span> <span class="o">&lt;-</span> state.bases
-row.names<span class="p">(</span>exon.transition.matrix<span class="p">)</span> <span class="o">&lt;-</span> <span class="s">&quot;E&quot;</span>
-print<span class="p">(</span>exon.transition.matrix<span class="p">)</span>
-set.seed<span class="p">(</span><span class="m">1026</span><span class="p">)</span>
-sample.state <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> state.bases<span class="p">,</span> prob <span class="o">=</span> exon.transition.prob<span class="p">,</span>
-                       size <span class="o">=</span> <span class="m">1</span><span class="p">,</span> replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
-cat<span class="p">(</span>sample.state<span class="p">)</span>
-
-<span class="c1">## -----------------------------</span>
-<span class="c1">## Generating sequence</span>
-<span class="c1">## -----------------------------</span>
-<span class="c1">## Construct transition matrix</span>
-S <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">1</span><span class="p">,</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">3</span><span class="p">))</span>
-E <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">0.9</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
-SS5 <span class="o">&lt;-</span> c<span class="p">(</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">3</span><span class="p">),</span> <span class="m">1</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
-I <span class="o">&lt;-</span> c<span class="p">(</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">3</span><span class="p">),</span> <span class="m">0.9</span><span class="p">,</span> <span class="m">0.1</span><span class="p">)</span>
-N <span class="o">&lt;-</span> c<span class="p">(</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">4</span><span class="p">),</span> <span class="m">1</span><span class="p">)</span>
-myTransMtx <span class="o">&lt;-</span> rbind<span class="p">(</span>S<span class="p">,</span>E<span class="p">,</span> SS5<span class="p">,</span> I<span class="p">,</span> N<span class="p">)</span>
-colnames<span class="p">(</span>myTransMtx<span class="p">)</span> <span class="o">&lt;-</span> rownames<span class="p">(</span>myTransMtx<span class="p">)</span>
-print<span class="p">(</span>myTransMtx<span class="p">)</span>
-<span class="c1">## Construct emission matrix</span>
-S <span class="o">&lt;-</span> rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">4</span><span class="p">)</span>
-E <span class="o">&lt;-</span> rep<span class="p">(</span><span class="m">1</span><span class="o">/</span><span class="m">4</span><span class="p">,</span> <span class="m">4</span><span class="p">)</span>
-SS5 <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0.05</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0.95</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
-I <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0.4</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> <span class="m">0.4</span><span class="p">)</span>
-N <span class="o">&lt;-</span> c<span class="p">(</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">4</span><span class="p">))</span>
-myEmisMtx <span class="o">&lt;-</span> rbind<span class="p">(</span>S<span class="p">,</span>E<span class="p">,</span> SS5<span class="p">,</span> I<span class="p">,</span> N<span class="p">)</span>
-colnames<span class="p">(</span>myEmisMtx<span class="p">)</span> <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span> <span class="s">&quot;C&quot;</span><span class="p">,</span> <span class="s">&quot;G&quot;</span><span class="p">,</span> <span class="s">&quot;T&quot;</span><span class="p">)</span>
-print<span class="p">(</span>myEmisMtx<span class="p">)</span>
-<span class="c1">## Function to generate sequence</span>
-GenerateHMMSeq <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>emmisionMx<span class="p">,</span> transitionMx<span class="p">,</span> len<span class="p">){</span>
-    state.bases <span class="o">&lt;-</span> row.names<span class="p">(</span>emmisionMx<span class="p">)</span>
-    dna.bases   <span class="o">&lt;-</span> colnames<span class="p">(</span>emmisionMx<span class="p">)</span>
-    out.seq.path <span class="o">&lt;-</span> rep<span class="p">(</span><span class="kc">NA</span><span class="p">,</span> len<span class="p">)</span>
-    out.state.path <span class="o">&lt;-</span> rep<span class="p">(</span><span class="kc">NA</span><span class="p">,</span> len<span class="p">)</span>
-    <span class="c1">## State of first base is &quot;Start&quot;</span>
-    state0 <span class="o">&lt;-</span> <span class="s">&quot;S&quot;</span>
-    cat<span class="p">(</span><span class="s">&quot;Start\n&quot;</span><span class="p">)</span>
-    
-    <span class="kr">for</span> <span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span>len<span class="p">)</span> <span class="p">{</span>
-        <span class="c1">## Choose State</span>
-        state.i <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> state.bases<span class="p">,</span> prob <span class="o">=</span> transitionMx<span class="p">[</span>state0<span class="p">,</span> <span class="p">],</span> 
-                          replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">,</span> size <span class="o">=</span> <span class="m">1</span><span class="p">)</span>
-        <span class="kr">if</span><span class="p">(</span>state.i <span class="o">==</span> <span class="s">&quot;N&quot;</span><span class="p">){</span>
-            out.state.path<span class="p">[</span>i<span class="p">]</span> <span class="o">&lt;-</span> state.i
-            cat<span class="p">(</span><span class="s">&quot;End\n&quot;</span><span class="p">)</span>
-            <span class="kr">break</span>
-        <span class="p">}</span>
-        base.i  <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> dna.bases<span class="p">,</span> prob <span class="o">=</span> emmisionMx<span class="p">[</span>state.i<span class="p">,</span> <span class="p">],</span> 
-                          replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">,</span> size <span class="o">=</span> <span class="m">1</span><span class="p">)</span>
-        cat<span class="p">(</span><span class="s">&quot;Base&quot;</span><span class="p">,</span> i<span class="p">,</span> <span class="s">&quot;is&quot;</span><span class="p">,</span> base.i<span class="p">,</span> <span class="s">&quot;under&quot;</span><span class="p">,</span> state.i<span class="p">,</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
-        out.state.path<span class="p">[</span>i<span class="p">]</span> <span class="o">&lt;-</span> state.i
-        out.seq.path<span class="p">[</span>i<span class="p">]</span> <span class="o">&lt;-</span> base.i
-        state0 <span class="o">&lt;-</span> state.i
-    <span class="p">}</span>
-    cat<span class="p">(</span><span class="s">&quot;Seq Path:&quot;</span><span class="p">,</span> na.omit<span class="p">(</span>out.seq.path<span class="p">),</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
-    cat<span class="p">(</span><span class="s">&quot;StatPath:&quot;</span><span class="p">,</span> na.omit<span class="p">(</span>out.state.path<span class="p">),</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
-    <span class="kr">return</span><span class="p">(</span><span class="m">1</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="c1">## --------------------------</span>
-<span class="c1">## Compute Prob of state path</span>
-<span class="c1">## --------------------------</span>
-ComputeStatePathProb <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>seqPath<span class="p">,</span> statePath<span class="p">,</span> transMtx<span class="p">,</span> emisMtx<span class="p">,</span> log<span class="o">=</span><span class="kc">TRUE</span><span class="p">){</span>
-    seqPath <span class="o">&lt;-</span> unlist<span class="p">(</span>strsplit<span class="p">(</span>toupper<span class="p">(</span>seqPath<span class="p">),</span> <span class="s">&quot;&quot;</span><span class="p">))</span>
-    statePath <span class="o">&lt;-</span> unlist<span class="p">(</span>strsplit<span class="p">(</span>statePath<span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">))</span>
-    statePath<span class="p">[</span>statePath<span class="o">==</span><span class="s">&quot;5&quot;</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="s">&quot;SS5&quot;</span>
-    <span class="c1">## First base</span>
-    <span class="c1">## previous is under Start State</span>
-    prob <span class="o">&lt;-</span>  transMtx<span class="p">[</span><span class="s">&quot;S&quot;</span><span class="p">,</span> statePath<span class="p">[</span><span class="m">1</span><span class="p">]]</span> <span class="o">*</span> emisMtx<span class="p">[</span>statePath<span class="p">[</span><span class="m">1</span><span class="p">],</span> seqPath<span class="p">[</span><span class="m">1</span><span class="p">]]</span>
-    <span class="kr">for</span> <span class="p">(</span>i <span class="kr">in</span> <span class="m">2</span><span class="o">:</span>length<span class="p">(</span>seqPath<span class="p">)){</span>
-        state.i <span class="o">&lt;-</span> statePath<span class="p">[</span>i<span class="p">]</span>
-        nucleotide.i <span class="o">&lt;-</span> seqPath<span class="p">[</span>i<span class="p">]</span>
-        prob.i <span class="o">&lt;-</span> transMtx<span class="p">[</span>statePath<span class="p">[</span>i<span class="m">-1</span><span class="p">],</span>state.i<span class="p">]</span> <span class="o">*</span> emisMtx<span class="p">[</span>statePath<span class="p">[</span>i<span class="p">],</span> nucleotide.i<span class="p">]</span>
-        prob <span class="o">&lt;-</span> prob <span class="o">*</span> prob.i
-    <span class="p">}</span>
-    <span class="c1">## End State</span>
-    prob <span class="o">&lt;-</span> prob <span class="o">*</span> transMtx<span class="p">[</span>statePath<span class="p">[</span>length<span class="p">(</span>statePath<span class="p">)],</span> <span class="s">&quot;N&quot;</span><span class="p">]</span>
-    <span class="kr">if</span> <span class="p">(</span>log<span class="p">){</span>
-        <span class="kr">return</span> <span class="p">(</span>log2<span class="p">(</span>prob<span class="p">)</span><span class="o">/</span>log2<span class="p">(</span>exp<span class="p">(</span><span class="m">1</span><span class="p">)))</span> 
-    <span class="p">}</span> <span class="kr">else</span> <span class="p">{</span>
-        <span class="kr">return</span> <span class="p">(</span>prob<span class="p">)</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-</div>
 </div>
 </div>
 

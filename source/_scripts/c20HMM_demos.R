@@ -170,11 +170,6 @@ ptb.peak.seq[neg.indices] <- reverseComplement(ptb.peak.rna[neg.indices]) ## tra
 library("plyr")
 library("snowfall")
 ptb.peak.seq <- as.list(as.character(ptb.peak.seq))
-ptb.peak.rna <- llply(ptb.peak.seq, function(ele) {
-    ele <- as.character(dna2rna(DNAString(ele)))
-    return(ele)
-    })
-
 Seq2Obv <- function(dataList, size) {
     pass.indices <- sapply(dataList, nchar)
     dataList <- dataList[pass.indices >= size]
@@ -189,33 +184,35 @@ Seq2Obv <- function(dataList, size) {
     dataList
 }
 
-Seq2ObvSuper <- function(dataList, size) {
+Seq2ObvSuper <- function(dataList, size, startChar) {
     pass.indices <- sapply(dataList, nchar)
-    dataList <- dataList[pass.indices >= size]
+    dataList <- dataList[pass.indices >= (size + startChar - 1)]
     dataList <- sfLapply(dataList, function(ele) {
         ele <- as.character(dna2rna(DNAString(ele)))
-        start.i <- 1
+        start.i <- startChar
         ele <- substring(ele, 
                          seq(start.i, nchar(ele), size), 
-                         seq((start.i + size - start.i), nchar(ele), size))
+                         seq((size + start.i - 1), nchar(ele), size))
         return(ele[ele != ""])
     })
     dataList
 }
 
-motif.size <- 3 ## triplet
-ptb.peak.obv <- Seq2ObvSuper(ptb.peak.seq, size = 3)
-
+ptb.peak.obv1 <- Seq2ObvSuper(ptb.peak.seq, size = 3, startChar = 1)
+ptb.peak.obv2 <- Seq2ObvSuper(ptb.peak.seq, size = 3, startChar = 2)
+ptb.peak.obv3 <- Seq2ObvSuper(ptb.peak.seq, size = 3, startChar = 3)
+ptb.peak.obvFull <- c(ptb.peak.obv1, ptb.peak.obv2, ptb.peak.obv3)
 ## -----------------------------
 ## Estimate HMM of PTB
 ## -----------------------------
 require("RHmm")
-ptb.HMM.estimated <- HMMFit(ptb.peak.obv, dis = "DISCRETE", nStates = 2,
+ptb.HMM.estimated <- HMMFit(ptb.peak.obvFull, dis = "DISCRETE", nStates = 2,
        control = list(init = "RANDOM"))
 ptb.HMM.estimated.maxLLH <- ptb.HMM.estimated$LLH
-for (i in 1:100) {
-    ptb.HMM.estimated.each <- HMMFit(ptb.peak.obv, dis = "DISCRETE", nStates = 2,
-                                control = list(init = "RANDOM"))
+for (i in 1:20) {
+    ptb.HMM.estimated.each <- HMMFit(ptb.peak.obvFull, dis = "DISCRETE", 
+                                     nStates = 2, 
+                                     control = list(init = "RANDOM"))
     ptb.HMM.estimated.each.LLH <- ptb.HMM.estimated.each$LLH
     cat(ptb.HMM.estimated.maxLLH, "vs", ptb.HMM.estimated.each.LLH, "\n")
     if (ptb.HMM.estimated.each.LLH > ptb.HMM.estimated.maxLLH) {
@@ -234,9 +231,29 @@ ptb.HMM.emisMx  <- matrix(unlist(ptb.HMM.emisMx), byrow = T,
                           ncol = ptb.HMM.nSymbols, 
                           nrow = ptb.HMM.nStates)
 colnames(ptb.HMM.emisMx) <- ptb.HMM.symbols
-write.table(ptb.HMM.emisMx, file="ptb_emission.txt", col.names=T, quote=F, sep="\t")
+row.names(ptb.HMM.emisMx) <- c("State 1", "State 2")
+# write.table(ptb.HMM.emisMx, file="ptb_emission.txt", col.names=T, quote=F, sep="\t")
 
+## -----------------------------
+## Visualize PTB HMM
+## -----------------------------
+ptb.HMM.emisMx.order <- ptb.HMM.emisMx[, order(ptb.HMM.emisMx[1, ], decreasing=T)]
+library(reshape2)
+ptb.HMM.emisMx.order <- as.data.frame(ptb.HMM.emisMx.order)
+ptb.HMM.emisMx.order$State <- row.names(ptb.HMM.emisMx.order)
+ptb.HMM.emisMx.order.melt <- melt(ptb.HMM.emisMx.order, id.vars = "State")
+p <- ggplot(data = ptb.HMM.emisMx.order.melt, 
+       aes(x = variable, y = value, fill = State)) + 
+    geom_bar(stat="identity", position=position_dodge()) +
+    theme_bw() + 
+    theme(text = element_text(family = "xkcd", size = 20), 
+          axis.text.x = element_text(angle = 90, hjust = 1), 
+          legend.justification = c(0, 0), 
+          legend.position=c(0.9, 0.7)) + 
+    xlab("Triplet") + ylab("Emission Prob") 
+    
 
+    
 ## -----------------------------
 ## Construct PTB HMM
 ## -----------------------------
