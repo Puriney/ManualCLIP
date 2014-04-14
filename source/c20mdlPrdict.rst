@@ -272,7 +272,19 @@ Viterbi algorithm
 Estimate HMM
 ^^^^^^^^^^^^^^^^^^^
 
-`GEO data <http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19323>`_ : 
+In the 5'-end splicing end recognition toy model, the emission and transition probabilities are presumed so that we could estimate the most possible state path which is the best explanation for the observed sequence. 
+
+But the question is where we could know about the emission and transition probabilities of HMM before we tackle HMM? How could we learn the parameters of HMM? The solutions to this question would be split into two branches: supervised learnings and unsupervised learnings. The algorithms behind these would be introduced in the following. Luckily there are several convenient ``R`` packages that associate with HMM. 
+
+- HMM package. 
+.. Super-easy to use. But when inferring the parameters of HMM, the observation can only be one. BAD one. I thought it is even dead end. 
+- RHmm Good one
+- depmixS4
+- mhsmm
+
+During this chapter ``RHmm`` was used to demonstrate how to estimate parameters (:math:`\theta` ) of HMM in real scientific researches [Han2014]_. 
+
+`GEO data <http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19323>`_ of hg18. 
 
 Supervised Learning
 """"""""""""""""""""
@@ -280,10 +292,16 @@ Supervised Learning
 Unsupervised Learning
 """""""""""""""""""""
 
-- HMM package. Super-easy to use. But when inferring the parameters of HMM, the observation can only be one. BAD one. I thought it is even dead end. 
-- RHmm Good one
-- depmixS4
-- mhsmm
+Two-state HMM was designed based on triplets in order to assess whether 3nt motif would segregate into two states and whether these two states had distinct emission probabilities. Basically in this part we could implement the codes to reproduce the results. 
+
+.. figure:: _static/c20HMM_PTB.png
+	:scale: 50 % 
+	:align: center
+
+	PTBP1 protein binding model. A: Two-states HMM was designed and successfully trained. Transition probabilities was shown. B: Emission probabilities of the two states had different preference to triplets. 
+
+
+
 
 .. _c20-SVM:
 

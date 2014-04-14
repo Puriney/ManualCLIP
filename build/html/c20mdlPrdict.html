@@ -26,7 +26,14 @@
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="A little book about CLIP-seq 0.0.2 documentation" href="index.html" />
     <link rel="next" title="Pipelines, Toolkits and Softwares" href="c30pipeline.html" />
-    <link rel="prev" title="Analyze CLIP-seq Data to locate RBP Binding Sites" href="c10anlyzRBP.html" /> 
+    <link rel="prev" title="Analyze CLIP-seq Data to locate RBP Binding Sites" href="c10anlyzRBP.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-49989911-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
   </head>
   <body>
     <div class="related">
@@ -62,6 +69,11 @@
 <li><a class="reference internal" href="#compute-probability-of-state-path">Compute Probability of State Path</a></li>
 <li><a class="reference internal" href="#enumerate-state-paths">Enumerate State Paths</a></li>
 <li><a class="reference internal" href="#viterbi-algorithm">Viterbi algorithm</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#estimate-hmm">Estimate HMM</a><ul>
+<li><a class="reference internal" href="#supervised-learning">Supervised Learning</a></li>
+<li><a class="reference internal" href="#unsupervised-learning">Unsupervised Learning</a></li>
 </ul>
 </li>
 </ul>
@@ -325,6 +337,27 @@ Posterior Decoding<span class="o">:</span>  <span class="m">0.461971754327234</s
 <h4>Viterbi algorithm<a class="headerlink" href="#viterbi-algorithm" title="Permalink to this headline">¶</a></h4>
 </div>
 </div>
+<div class="section" id="estimate-hmm">
+<h3>Estimate HMM<a class="headerlink" href="#estimate-hmm" title="Permalink to this headline">¶</a></h3>
+<p>In the 5&#8217;-end splicing end recognition toy model, the emission and transition probabilities are presumed so that we could estimate the most possible state path which is the best explanation for the observed sequence.</p>
+<p>But the question is where we could know about the emission and transition probabilities of HMM before we tackle HMM? How could we learn the parameters of HMM? To solutions to this question would be split into two branches supervised learnings and unsupervised learnings. The algorithms behind these would be introduced and luckily there are several <tt class="docutils literal"><span class="pre">R</span></tt> packages that associate with HMM.</p>
+<ul class="simple">
+<li>HMM package.</li>
+</ul>
+<ul class="simple">
+<li>RHmm Good one</li>
+<li>depmixS4</li>
+<li>mhsmm</li>
+</ul>
+<p>During this chapter <tt class="docutils literal"><span class="pre">RHmm</span></tt> was used to demonstrate how to estimate parameters (<span class="math">\(\theta\)</span> ) of HMM in real scientific researches <a class="reference internal" href="#han2014" id="id5">[Han2014]</a>.</p>
+<p><a class="reference external" href="http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19323">GEO data</a> :</p>
+<div class="section" id="supervised-learning">
+<h4>Supervised Learning<a class="headerlink" href="#supervised-learning" title="Permalink to this headline">¶</a></h4>
+</div>
+<div class="section" id="unsupervised-learning">
+<h4>Unsupervised Learning<a class="headerlink" href="#unsupervised-learning" title="Permalink to this headline">¶</a></h4>
+</div>
+</div>
 </div>
 <div class="section" id="svm">
 <span id="c20-svm"></span><h2>SVM<a class="headerlink" href="#svm" title="Permalink to this headline">¶</a></h2>
@@ -352,13 +385,17 @@ Posterior Decoding<span class="o">:</span>  <span class="m">0.461971754327234</s
 <table class="docutils citation" frame="void" id="han2014" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[Han2014]</a></td><td>Han, Areum, et al. &#8220;De Novo Prediction of PTBP1 Binding and Splicing Targets Reveals Unexpected Features of Its RNA Recognition and Function.&#8221; PLOS Computational Biology 10.1 (2014).</td></tr>
+<tr><td class="label">[Han2014]</td><td><em>(<a class="fn-backref" href="#id3">1</a>, <a class="fn-backref" href="#id5">2</a>)</em> Han, Areum, et al. &#8220;De Novo Prediction of PTBP1 Binding and Splicing Targets Reveals Unexpected Features of Its RNA Recognition and Function.&#8221; PLOS Computational Biology 10.1 (2014).</td></tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="source-scripts">
 <h2>Source Scripts<a class="headerlink" href="#source-scripts" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-r"><div class="highlight"><pre>library<span class="p">(</span>ggplot2<span class="p">)</span>
+<div class="highlight-r"><div class="highlight"><pre><span class="c1">## ---------------</span>
+<span class="c1">## Scripts for c20_Model_HMM</span>
+<span class="c1">## Yun Yan &lt;yanyun@whu.edu.cn&gt;</span>
+<span class="c1">## ---------------</span>
+library<span class="p">(</span>ggplot2<span class="p">)</span>
 library<span class="p">(</span>xkcd<span class="p">)</span>
 dna.bases <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span> <span class="s">&quot;C&quot;</span><span class="p">,</span> <span class="s">&quot;G&quot;</span><span class="p">,</span> <span class="s">&quot;T&quot;</span><span class="p">)</span>
 seq.path <span class="o">&lt;-</span> <span class="s">&quot;CTTCATGTGAAAGCAGACGTAAGTCA&quot;</span>
@@ -382,7 +419,8 @@ p <span class="o">&lt;-</span> ggplot<span class="p">(</span>intron.emmision.pro
         coord_polar<span class="p">(</span><span class="s">&quot;y&quot;</span><span class="p">)</span> <span class="o">+</span> 
         xlab<span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> ylab<span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> ggtitle<span class="p">(</span><span class="s">&#39;Intron Roulette Wheel&#39;</span><span class="p">)</span> <span class="o">+</span> 
         labs<span class="p">(</span>fill<span class="o">=</span><span class="s">&quot;Base&quot;</span><span class="p">)</span> <span class="o">+</span> 
-        opts<span class="p">(</span>axis.ticks<span class="o">=</span>theme_blank<span class="p">())</span>
+        theme_xkcd<span class="p">()</span> <span class="o">+</span> 
+        theme<span class="p">(</span>axis.ticks<span class="o">=</span>element_blank<span class="p">(),</span> text <span class="o">=</span> element_text<span class="p">(</span>size <span class="o">=</span> <span class="m">30</span><span class="p">))</span> 
 p 
 <span class="c1">## Sample bases</span>
 set.seed<span class="p">(</span><span class="m">1026</span><span class="p">)</span>
@@ -482,38 +520,6 @@ ComputeStatePathProb <span class="o">&lt;-</span> <span class="kr">function</spa
         <span class="kr">return</span> <span class="p">(</span>prob<span class="p">)</span>
     <span class="p">}</span>
 <span class="p">}</span>
-
-<span class="c1">## --------------------------------------</span>
-<span class="c1">## Force Compute Most Possible State Path</span>
-<span class="c1">## --------------------------------------</span>
-InspectorHMM <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>seqPath<span class="p">,</span> transMtx<span class="p">,</span> emisMtx <span class="p">){</span>
-    sumProb <span class="o">&lt;-</span> <span class="m">0</span>
-    allPath <span class="o">&lt;-</span> <span class="kc">NULL</span>
-    allProb <span class="o">&lt;-</span> <span class="kc">NULL</span>
-    print <span class="p">(</span><span class="s">&quot;All State Path with non-zero Probability: &quot;</span><span class="p">)</span>
-    <span class="kr">for</span> <span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span><span class="m">24</span><span class="p">)</span> <span class="p">{</span>
-        path_i <span class="o">&lt;-</span> c<span class="p">(</span>rep<span class="p">(</span><span class="s">&quot;E&quot;</span><span class="p">,</span> i<span class="p">),</span> <span class="s">&quot;5&quot;</span><span class="p">,</span> rep<span class="p">(</span><span class="s">&quot;I&quot;</span><span class="p">,</span> <span class="m">25</span><span class="o">-</span>i<span class="p">))</span>
-        path_i <span class="o">&lt;-</span> paste<span class="p">(</span>path_i<span class="p">,</span> collapse<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">)</span>
-        allPath<span class="p">[</span>i<span class="p">]</span> <span class="o">&lt;-</span> path_i
-        
-        p <span class="o">&lt;-</span> computeProb<span class="p">(</span>seqPath<span class="p">,</span> path_i<span class="p">,</span>transMtx<span class="p">,</span> emisMtx<span class="p">,</span>log<span class="o">=</span><span class="kc">FALSE</span><span class="p">)</span>
-        allProb<span class="p">[</span>i<span class="p">]</span> <span class="o">&lt;-</span> p 
-        <span class="kr">if</span> <span class="p">(</span>p <span class="o">!=</span> <span class="m">0</span><span class="p">){</span>
-            print <span class="p">(</span>path_i<span class="p">)</span>
-            print <span class="p">(</span>p<span class="p">)</span>
-            sumProb <span class="o">&lt;-</span> sumProb <span class="o">+</span> p 
-        <span class="p">}</span>
-    <span class="p">}</span>
-    maxProb <span class="o">&lt;-</span> max<span class="p">(</span>allProb<span class="p">,</span> na.rm<span class="o">=</span><span class="kc">TRUE</span><span class="p">)</span>
-    max <span class="o">&lt;-</span> which<span class="p">(</span>allProb <span class="o">==</span> maxProb<span class="p">)</span>
-    cat <span class="p">(</span><span class="s">&quot;Best State Path and original Sequence&quot;</span><span class="p">,</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
-    cat <span class="p">(</span>allPath<span class="p">[</span>max<span class="p">],</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
-    cat <span class="p">(</span>seqPath<span class="p">,</span><span class="s">&quot;\n&quot;</span><span class="p">)</span>
-    cat <span class="p">(</span>paste<span class="p">(</span><span class="s">&quot;Maximum Probability: &quot;</span><span class="p">,</span> maxProb<span class="p">,</span> sep<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">),</span><span class="s">&quot;\n&quot;</span><span class="p">)</span>
-    cat <span class="p">(</span>paste<span class="p">(</span><span class="s">&quot;Maximum Prob (log):  &quot;</span><span class="p">,</span> log2<span class="p">(</span>maxProb<span class="p">)</span><span class="o">/</span>log2<span class="p">(</span>exp<span class="p">(</span><span class="m">1</span><span class="p">)),</span> sep<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">),</span><span class="s">&quot;\n&quot;</span><span class="p">)</span>
-    cat <span class="p">(</span>paste<span class="p">(</span><span class="s">&quot;Posterior Decoding:  &quot;</span><span class="p">,</span> maxProb<span class="o">/</span>sumProb<span class="p">,</span> sep<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">),</span><span class="s">&quot;\n&quot;</span><span class="p">)</span>
-    <span class="kr">return</span> <span class="p">(</span>allPath<span class="p">[</span>max<span class="p">])</span>
-<span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -540,9 +546,24 @@ InspectorHMM <span class="o">&lt;-</span> <span class="kr">function</span><span 
         <li><a href="index.html">A little book about CLIP-seq 0.0.2 documentation</a> &raquo;</li> 
       </ul>
     </div>
+
     <div class="footer">
         &copy; Copyright 2014, Yun Yan.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
     </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
   </body>
 </html>

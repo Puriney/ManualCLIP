@@ -269,6 +269,31 @@ So far hopefully you have understood the principles of HMM. Obviously we cannot 
 Viterbi algorithm
 """"""""""""""""""""
 
+Estimate HMM
+^^^^^^^^^^^^^^^^^^^
+
+In the 5'-end splicing end recognition toy model, the emission and transition probabilities are presumed so that we could estimate the most possible state path which is the best explanation for the observed sequence. 
+
+But the question is where we could know about the emission and transition probabilities of HMM before we tackle HMM? How could we learn the parameters of HMM? To solutions to this question would be split into two branches supervised learnings and unsupervised learnings. The algorithms behind these would be introduced and luckily there are several ``R`` packages that associate with HMM. 
+
+- HMM package. 
+.. Super-easy to use. But when inferring the parameters of HMM, the observation can only be one. BAD one. I thought it is even dead end. 
+- RHmm Good one
+- depmixS4
+- mhsmm
+
+During this chapter ``RHmm`` was used to demonstrate how to estimate parameters (:math:`\theta` ) of HMM in real scientific researches [Han2014]_. 
+
+`GEO data <http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19323>`_ : 
+
+Supervised Learning
+""""""""""""""""""""
+
+Unsupervised Learning
+"""""""""""""""""""""
+
+
+
 .. _c20-SVM:
 
 SVM
