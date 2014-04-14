@@ -27,14 +27,7 @@
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="A little book about CLIP-seq 0.0.2 documentation" href="index.html" />
     <link rel="next" title="Pipelines, Toolkits and Softwares" href="c30pipeline.html" />
-    <link rel="prev" title="Analyze CLIP-seq Data to locate RBP Binding Sites" href="c10anlyzRBP.html" />
- 
-<script type="text/javascript">
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-49989911-1']);
-  _gaq.push(['_trackPageview']);
-</script>
-
+    <link rel="prev" title="Analyze CLIP-seq Data to locate RBP Binding Sites" href="c10anlyzRBP.html" /> 
   </head>
   <body>
     <div class="related">
@@ -361,7 +354,7 @@ Posterior Decoding<span class="o">:</span>  <span class="m">0.461971754327234</s
 <li>Visualization of results.</li>
 </ul>
 <p>If you are not interested in data cleaning which ironically takes up 90% of time of most data scientists, you could jump to HMM estimation.</p>
-<p><a href="#id6"><span class="problematic" id="id7">:underline:`CLIP-seq Data Retrieve`</span></a>. PTB CLIP-seq sequencing reads were mapped to hg17 and adapted to hg18 in the latest <a class="reference external" href="http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19323">GEO data</a> . Author had kindly provided the genome coordinations of CLIP-seq peak clusters so that we could easily fetch the genome and transcript sequence of CLIP-seq clusters by using <tt class="docutils literal"><span class="pre">Bioconductor</span></tt>.</p>
+<p><span class="underline">CLIP-seq Data Retrieve</span>. PTB CLIP-seq sequencing reads were mapped to hg17 and adapted to hg18 in the latest <a class="reference external" href="http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19323">GEO data</a> . Author had kindly provided the genome coordinations of CLIP-seq peak clusters so that we could easily fetch the genome and transcript sequence of CLIP-seq clusters by using <tt class="docutils literal"><span class="pre">Bioconductor</span></tt>.</p>
 <div class="highlight-r"><div class="highlight"><pre><span class="c1">## ---------------------</span>
 <span class="c1">## PTB CLIP-seq data</span>
 <span class="c1">## ---------------------</span>
@@ -401,7 +394,7 @@ ptb.peak.seq <span class="o">&lt;-</span> getSeq<span class="p">(</span>hg18.gen
 ptb.peak.seq<span class="p">[</span>neg.indices<span class="p">]</span> <span class="o">&lt;-</span> reverseComplement<span class="p">(</span>ptb.peak.rna<span class="p">[</span>neg.indices<span class="p">])</span> <span class="c1">## transcript sequence </span>
 </pre></div>
 </div>
-<p><a href="#id8"><span class="problematic" id="id9">:underline:`Cook Observed Sequence Path`</span></a>. For each read the sequence is continuously string, for example <em>ACTGATCGG</em> string and they are not triplet-sequence: <em>ACT GAT CGG</em>. In addition the format of cluster sequence is still in DNA, not RNA. Therefore one more step is needed to cook data.</p>
+<p><span class="underline">Cook Observed Sequence Path</span>. For each read the sequence is continuously string, for example <em>ACTGATCGG</em> string and they are not triplet-sequence: <em>ACT GAT CGG</em>. In addition the format of cluster sequence is still in DNA, not RNA. Therefore one more step is needed to cook data.</p>
 <div class="highlight-r"><div class="highlight"><pre><span class="c1">## Cook to observations</span>
 library<span class="p">(</span><span class="s">&quot;plyr&quot;</span><span class="p">)</span>
 library<span class="p">(</span><span class="s">&quot;snowfall&quot;</span><span class="p">)</span>
@@ -440,13 +433,13 @@ ptb.peak.obv3 <span class="o">&lt;-</span> Seq2ObvSuper<span class="p">(</span>p
 ptb.peak.obvFull <span class="o">&lt;-</span> c<span class="p">(</span>ptb.peak.obv1<span class="p">,</span> ptb.peak.obv2<span class="p">,</span> ptb.peak.obv3<span class="p">)</span>
 </pre></div>
 </div>
-<p><a href="#id10"><span class="problematic" id="id11">:underline:`Design HMM`</span></a>. Two-state HMM was designed: binding state or non-binding state.</p>
+<p><span class="underline">Design HMM</span>. Two-state HMM was designed: binding state or non-binding state.</p>
 <div class="figure align-center">
 <a class="reference internal image-reference" href="_images/c20HMM_PTB.png"><img alt="_images/c20HMM_PTB.png" src="_images/c20HMM_PTB.png" style="width: 600px;" /></a>
 <p class="caption">PTBP1 protein binding model. A: Two-states HMM was designed and successfully trained. Transition probabilities was shown. B: Emission probabilities of the two states had different preference to triplets.</p>
 </div>
 <p>We are trying to reproduce it.</p>
-<p><a href="#id12"><span class="problematic" id="id13">:underline:`Estimation`</span></a>.</p>
+<p><span class="underline">Estimation</span>.</p>
 <div class="highlight-r"><div class="highlight"><pre><span class="c1">## -----------------------------</span>
 <span class="c1">## Estimate HMM of PTB</span>
 <span class="c1">## -----------------------------</span>
@@ -536,7 +529,7 @@ State <span class="m">1</span> <span class="m">0.072478344</span>
 State <span class="m">2</span> <span class="m">0.006707263</span>
 </pre></div>
 </div>
-<p><a href="#id14"><span class="problematic" id="id15">:underline:`Visualization`</span></a>.</p>
+<p><span class="underline">Visualization</span>.</p>
 <div class="highlight-r"><div class="highlight"><pre><span class="c1">## -----------------------------</span>
 <span class="c1">## Visualize PTB HMM</span>
 <span class="c1">## -----------------------------</span>
@@ -616,24 +609,9 @@ p <span class="o">&lt;-</span> ggplot<span class="p">(</span>data <span class="o
         <li><a href="index.html">A little book about CLIP-seq 0.0.2 documentation</a> &raquo;</li> 
       </ul>
     </div>
-
     <div class="footer">
         &copy; Copyright 2014, Yun Yan.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
     </div>
-<div class="footer">This page uses <a href="http://analytics.google.com/">
-Google Analytics</a> to collect statistics. You can disable it by blocking
-the JavaScript coming from www.google-analytics.com.
-<script type="text/javascript">
-  (function() {
-    var ga = document.createElement('script');
-    ga.src = ('https:' == document.location.protocol ?
-              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    ga.setAttribute('async', 'true');
-    document.documentElement.firstChild.appendChild(ga);
-  })();
-</script>
-</div>
-
   </body>
 </html>
