@@ -27,6 +27,7 @@ Book source at Github: https://github.com/Puriney/ManualCLIP
 Logs
 =====
 
+- Apr 17 2014. Questions on PTB transition prob matrix. Waiting for feedback from authors. 
 - Apr 14 2014. PTB HMM reproducbile. 
 - Apr 12 2014. Selecting most possible path by emunerating. 
 - Apr 11 2014. Section 3.1 HMM: new source code for generating sequence
