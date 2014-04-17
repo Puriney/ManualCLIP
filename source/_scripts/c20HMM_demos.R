@@ -128,6 +128,38 @@ ComputeStatePathProb <- function(seqPath, statePath, transMtx, emisMtx, log=TRUE
     }
 }
 
+## --------------------
+## Pick out the best State path
+## --------------------
+InspectorHMM <- function(obsSeq, transMtx, emisMtx ){
+    sumProb <- 0
+    allPath <- NULL
+    allProb <- NULL
+    print ("All State Path with non-zero Probability: ")
+    for (i in 1:24) {
+        path_i <- c(rep("E", i), "5", rep("I", 25-i))
+        path_i <- paste(path_i, collapse="")
+        allPath[i] <- path_i
+        
+        p <- computeProb(obsSeq, path_i,transMtx, emisMtx,log=FALSE)
+        allProb[i] <- p 
+        if (p != 0){
+            print (path_i)
+            print (p)
+            sumProb <- sumProb + p 
+        }
+    }
+    maxProb <- max(allProb, na.rm=TRUE)
+    max <- which(allProb == maxProb)
+    cat ("Best State Path and original Sequence", "\n")
+    cat (allPath[max], "\n")
+    cat (obsSeq,"\n")
+    cat (paste("Maximum Probability: ", maxProb, sep=""),"\n")
+    cat (paste("Maximum Prob (log):  ", log2(maxProb)/log2(exp(1)), sep=""),"\n")
+    cat (paste("Posterior Decoding:  ", maxProb/sumProb, sep=""),"\n")
+    return (allPath[max])
+}
+
 ## ---------------------
 ## PTB CLIP-seq data
 ## ---------------------
@@ -237,19 +269,19 @@ row.names(ptb.HMM.emisMx) <- c("State 1", "State 2")
 ## -----------------------------
 ## Visualize PTB HMM
 ## -----------------------------
-ptb.HMM.emisMx.order <- ptb.HMM.emisMx[, order(ptb.HMM.emisMx[1, ], decreasing=T)]
+ptb.HMM.emisMx.order <- ptb.HMM.emisMx[, order(ptb.HMM.emisMx[1, ], decreasing=F)]
 library(reshape2)
 ptb.HMM.emisMx.order <- as.data.frame(ptb.HMM.emisMx.order)
 ptb.HMM.emisMx.order$State <- row.names(ptb.HMM.emisMx.order)
 ptb.HMM.emisMx.order.melt <- melt(ptb.HMM.emisMx.order, id.vars = "State")
 p <- ggplot(data = ptb.HMM.emisMx.order.melt, 
        aes(x = variable, y = value, fill = State)) + 
-    geom_bar(stat="identity", position=position_dodge()) +
+    geom_bar(stat="identity", position=position_dodge()) + coord_flip() + 
     theme_bw() + 
     theme(text = element_text(family = "xkcd", size = 20), 
           axis.text.x = element_text(angle = 90, hjust = 1), 
           legend.justification = c(0, 0), 
-          legend.position=c(0.9, 0.7)) + 
+          legend.position=c(0.6, 0.7)) + 
     xlab("Triplet") + ylab("Emission Prob") 
     
 

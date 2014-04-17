@@ -12,7 +12,7 @@ This is an overview, glimpse, simple introduction to CLIP-seq. This little book 
 
 Hopefully this book would build a bridge between biologists and geeky computational scientists, at least in RNA-protein interaction research fields. After reading this book, bio-readers would have clearer concept about how the raw data produced by your efforts would be literally cooked as findings with scientific meanings. On the other hand computational scientists would not only learn to appreciate the underlying biological mysteries but also make the link between figuring out computational algorithms and solving biological problems more tight. 
 
-The book is deployed at `Readthedocs.org <http://a-little-book-about-clip-seq.readthedocs.org/en/latest/index.html>`_ and created by `Sphinx <http://sphinx-doc.org/>`_. Readthedocs automatically genreate the pdf file of this booklet though it is not perfect as custom ``Tex``. It could be downloaded `here <https://media.readthedocs.org/pdf/a-little-book-about-clip-seq/latest/a-little-book-about-clip-seq.pdf>`_. 
+The on-line html version of this book is deployed at `Readthedocs.org <http://a-little-book-about-clip-seq.readthedocs.org/en/latest/index.html>`_ and created by using `Sphinx <http://sphinx-doc.org/>`_. Readthedocs automatically genreate the pdf file of this booklet though it is not perfect as custom ``Tex``. It could be downloaded `here <https://media.readthedocs.org/pdf/a-little-book-about-clip-seq/latest/a-little-book-about-clip-seq.pdf>`_. 
 
 Book source at Github: https://github.com/Puriney/ManualCLIP 
 

@@ -1,21 +1,23 @@
 Model and Predict RBP Binding Preference
 ==================================================
 
-With methods mentioned in previous chapter we could hopefully distinguish the informative signals from the sequencing noises. Results achieved at this step could be enough for most exploratory researches. However, what if we take a further step? What could we learn from the confident results? Could we learn about the binding preference of RNA binding proteins and construct models to unveil why RBP binds here but not there? Could we even predict the global binding sites of RBP? It does not necessarily means making CLIP-seq *in silico* possible, but machine learning methods could yield promising supplement to the real signals which could be left out by the empirical thresholding. 
+With methods mentioned in previous chapter we could hopefully distinguish the informative signals from the sequencing noises. Results achieved at this step could be enough for most exploratory researches. However, what if we take a further step? What could we learn from the confident results? Could we learn about the binding preference of RNA binding proteins and construct models to unveil why RBP binds here but not there? Could we even predict the global binding sites of RBP? It does not necessarily means making CLIP-seq *in silico* possible, but machine learning methods could yield promising supplement to the real signals which are often left out due to the empirical thresholding. 
+
+Hidden Markov Model, SVM, Graph Kernel, Random forest have been applied in researches investigating RBP binding preferences with high-quality publications. 
 
 .. _c20-HMM:
 
 Hidden Markov Model
 -------------------------
 
-In the beginning of this section I would like to introduce HMM by a toy application: 5' end splicing site recognition, which was originated from NBT paper [Eddy2004]_. Admittedly this toy HMM is naive, it hopefully could help you take first step knowing how to infer the most possible splicing site, simply starting from raw DNA/RNA sequence together with some prior knowledges. For now we begin with the sequence: *CTTCATGTGAAAGCAGACGTAAGTCA*. Series of ideas and concepts would be illustrated step by step so that you could see how the biological question was translated to mathematical questions. Hopefully after you have known HMM I would introduce how HMM was employed in RBP science researches ([Zhang2013]_ and [Han2014]_). 
+In the beginning of this section I would like to introduce HMM by a toy application: 5' end splicing site recognition, which was originated from NBT paper [Eddy2004]_. Admittedly this toy HMM is naive, it hopefully could help you take first step knowing how to infer the most possible splicing site by simply starting from raw DNA/RNA sequence together with some prior knowledges, for example sequence: ``CTTCATGTGAAAGCAGACGTAAGTCA``. Series of concepts and elements of HMM would be illustrated step by step so that you could see how the biological question was translated to mathematical questions and *vice versa*. Hopefully after you have known HMM I would introduce how HMM was employed in RBP science researches ([Han2014]_ and [Zhang2013]_). 
 
 Sequence Path v.s. State Path
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Sequence could be read by sequencing and thus observed. Each nucleotide residing on the DNA string belongs to some bio-functional regions. They are exons to be transcribed in the mature RNA, introns to be spliced out and splicing site, the boundary of exon and intron. These regions of different functions could be described as different states. 
+For one thing, transcriptome or genome sequence could be read by sequencing and thus is observed. Four basic types of nucleotides (A, T, C, G) come together to form a **sequence path**. For another, each nucleotide residing on the DNA string belongs to some bio-functional regions. They could be either exons to be transcribed in the mature RNA, or introns to be spliced out, or splicing site, the boundary of exon and intron. These regions of different functions could be described as different states. Likewise, the **state path** is composed of "E", "I", and "5", denoting "Exon", "Intron" and "5'-end Splicing Site" respectively. 
 
-Four basic types of nucleotides (A, T, C, G) come together to form a sequence path. Likewise, the state path is composed of "E", "I", and "5", denoting "Exon", "Intron" and "5'-end Splicing Site" respectively. For convenience we disregard 3' end splicing sites here. 
+For convenience we disregard 3' end splicing sites in our toy HMM. 
 
 For example:: 
 
@@ -27,9 +29,9 @@ Therefore the ultimate goal of locating the splicing site is to figure out the s
 Why Hidden? 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-At first sight whether GC-rich or AT-rich of a DNA string could be quickly determined given the sequence path, however you could barely say the state path immediately. This is where the "hidden" comes from. 
+At first sight whether GC-rich or AT-rich of a DNA string could be quickly determined given the sequence path, however you could barely figure out the state path immediately. This is where the "hidden" comes from. 
 
-The observed sequence path alone cannot help us to reveal the unobserved state path. With additional prior knowledge, for example, the distribution of A/T/G/C in each state, we could unveil the most possible E/I/5 state path in a **top-bottom** fashion. 
+To uncover the dark matter, the observed sequence path alone cannot help us to reveal the unobserved state path. With additional prior knowledge, for example, the distribution of A/T/G/C in each state, we could unveil the most possible E/I/5 state path in a **top-bottom** fashion. 
 
 Think in HMM
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -48,9 +50,9 @@ Let's play with intron state and under intron state we set the bases distributio
 	:scale: 40 %
 	:align: center
 
-	Distribution of A, C, G, T in toy intron. *(See R scripts to generate pie chart in final section in case of your curiosity)*
+	Distribution of A, C, G, T in toy intron. It means that in general within intron regions you would expect each 40% of A and T, each 10% G and C. *(See R scripts to generate pie chart in final section in case of your curiosity)*
 
-The **emission probabilities** under intron state could be described as the above roulette wheel. To generate a DNA string given the emission probabilities of intron, it is straightforward to implement sampling intron sequence of 26nt using ``R`` language:  
+The **emission probabilities** under intron state could be described as the above roulette wheel. To generate a DNA string given the emission probabilities of intron, it is straightforward to implement sampling intron sequence of 26nt using ``sample`` function in ``R`` language:  
 
 .. code-block:: r 
 	
@@ -61,10 +63,9 @@ The **emission probabilities** under intron state could be described as the abov
 	> sample.seq <- sample(x = dna.bases, prob = intron.emission.prob, 
 							size = seq.len, replace = T)
 	> cat(sample.seq, "\n")
-	> table(sample.seq)
 	A C A G A A A A A A A T G A T A A A C A G G G A A T 
 
-You could even double-check whether this string follow your prior set distribution. I give you result of 1000nt sequence by setting ``seq.len <- 1000`` without changing other codes:  
+You could even double-check whether the generated string follows your prior set distribution. I give you result of a long sequence, i.e. 1000nt by setting ``seq.len <- 1000`` without changing other lines of codes:  
 
 .. code-block:: r
 
@@ -73,7 +74,7 @@ You could even double-check whether this string follow your prior set distributi
 	  A   C   G   T 
 	396  81 101 422
 
-Emission probabilities of each state is dedicated to generate observed base. Don't forget we assume we are HMM now. If we clearly know state status of each base, we could immediately sample its nucleotide given the emission probabilities. Previously we set ``seq.len`` as ``26`` or ``1000`` to generate sequence of corresponding length. In the same way, we could give the individual base a nucleotide by setting ``seq.len <- 1``.  
+Emission probabilities of each state is dedicated to generate observed base. Don't forget we assume we are HMM now. If we clearly know state status of each base, we could immediately sample its nucleotide given the emission probabilities. Previously we set ``seq.len`` as ``26`` or ``1000`` to generate sequence of corresponding length. In the same way, we could assign the individual base of intron a nucleotide by setting ``seq.len <- 1``.  
 
 This story under intron state could be exactly applied to exon, splicing sites states as well. Thus we have three wheels of emission probabilities under three different states. 
 
@@ -98,7 +99,7 @@ Let's assume exon status has the following transition probabilities:
 	    E   5 I
 	E 0.9 0.1 0
 
-It means the probability of continuing exon state is 0.9 whereas changing to 5' end splicing site state is 0.1. Note that in our toy model exon cannot directly jump to intron state. 
+It means the probability of continuing exon state is 0.9 whereas changing to 5' end splicing site state is 0.1. You could tell that transition probabilities describe the linear order in which we expect the states to occur: one or more Es, one 5, one or more Is. Note that in our toy model exon cannot directly jump to intron state. 
 
 You cannot be unfamiliar with the following codes to choose state for next base: 
 
@@ -151,7 +152,12 @@ The full transition probabilities matrix would be:
 	I   0 0.0 0.0 0.9 0.1
 	N   0 0.0 0.0 0.0 1.0
 
-Check the source R script to find ``GenerateHMMSeq`` function. After you type the following in the R console, TA-DA, a sequence with HMM in mind is generated. 
+Check the source R script to find ``GenerateHMMSeq`` function. 
+
+.. literalinclude:: _scripts/c20HMM/c20HMM_generate_demo.R
+    :language: r
+
+After you type the following in the R console, Aha, a sequence with HMM in mind is generated. 
 
 .. code-block:: r
 
@@ -178,7 +184,7 @@ Check the source R script to find ``GenerateHMMSeq`` function. After you type th
 	StatPath: E E E E E E E E E SS5 I I I I I N 
 	[1] 1
 
-You may noticed that in this case the length of output sequence is 15 though 20 is pre-defined. Is it wrong? No, because the probability of changing from "Intron" to "End" state is ``0.1``, not ``0``, Ongoing "Intron" state is possible to choose "End" state for next base. 
+You must have noticed that in this case the length of output sequence is 15 though 20 is pre-defined. Is it wrong? No, because the probability of changing from "Intron" to "End" state is ``0.1``, not ``0``, Ongoing "Intron" state is possible to choose "End" state for next base so that the generating process would be pre-terminated.  
 
 Judge Possible State Path
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -203,7 +209,12 @@ Given the observed sequence of 26nt, how likely do you think is the state path a
 
 26nt sequence has 26 emissions and 27 transitions (note the final end state).
 
-See ``ComputeStatePathProb`` function for details and it could yield: 
+See ``ComputeStatePathProb`` function for details: 
+
+.. literalinclude:: _scripts/c20HMM/c20HMM_compute_prob_demo.R
+	:language: r
+
+and it could yield: 
 
 .. code-block:: r
 
@@ -222,7 +233,12 @@ Enumerate State Paths
 
 	Most possible state path. 
 
-Among all the possible combinations of state path, how to pick up the most possible state path? There is one naive way: enumerate all the candidates, compute their probability, and pick up the highest one. 
+Among all the possible combinations of state path, how to pick up the most possible state path? There is one naive way: enumerate all the candidates, compute their probability, and pick up the highest one. The code is : 
+
+.. literalinclude:: _scripts/c20HMM/c20HMM_best_state_demo.R
+	:language: r
+
+Running ``InspectorHMM`` would yield: 
 
 .. code-block:: r
 
@@ -264,7 +280,10 @@ Among all the possible combinations of state path, how to pick up the most possi
 	Posterior Decoding:  0.461971754327234 
 	[1] "EEEEEEEEEEEEEEEEEE5IIIIIII"
 
-So far hopefully you have understood the principles of HMM. Obviously we cannot use the enumerate methods because when the length of sequence is increasing we could barely afford the time and computing resources to do that. We do have smarter algorithms. Keep reading. 
+
+The best state path is ``EEEEEEEEEEEEEEEEEE5IIIIIII`` of sequence path ``CTTCATGTGAAAGCAGACGTAAGTCA``. 
+
+Hopefully you have understood the principles of HMM. Obviously we cannot use the enumerate methods because when the length of sequence is increasing we could barely afford the time and computing resources to do that. We do have smarter algorithms.
 
 Viterbi algorithm
 """"""""""""""""""""
@@ -274,22 +293,48 @@ Estimate HMM in action
 
 In the 5'-end splicing end recognition toy model, the emission and transition probabilities are presumed so that we could estimate the most possible state path which is the best explanation for the observed sequence. 
 
-But the question is where we could know about the emission and transition probabilities of HMM before we tackle HMM? How could we learn the parameters of HMM? The solutions to this question would be split into two branches: supervised learnings and unsupervised learnings. The algorithms behind these would be introduced in the following. Luckily there are several convenient ``R`` packages that associate with HMM. 
+But another big question is where we could know about the emission and transition probabilities of HMM before we tackle HMM? How could we learn the parameters of HMM? The solutions to this question would be split into two branches: supervised learnings and unsupervised learnings. The algorithms behind these, for example Baum-Welch algorithm, would be introduced. Luckily there are several convenient ``R`` packages that associate with HMM. 
 
 * HMM
 * RHmm
 * depmixS4
 * mhsmm
 
+The context here is modeling and even predict RBP binding preference. As previously mentioned in Chapter 1, the sequenced tags generated in CLIP-seq experiments are considered the binding regions of RBP. The continuous regions with high signals, called RBP binding cluster,  indicate high affinity between these RNA regions and RBP. 
+
+With observed CLIP-seq tags and therefore the sequence of RBP binding clusters, we are trying to train HMM model wit best explanations to the observed path. 
+
 .. Super-easy to use. But when inferring the parameters of HMM, the observation can only be one. *AD one. I thought it is even dead end. 
 
 Supervised Learning
-""""""""""""""""""""
+"""""""""""""""""""
 
 Unsupervised Learning
 """""""""""""""""""""
 
-To model PTB binding preference, two-state HMM was designed based on triplets in order to assess whether 3nt motif would segregate into two states and whether these two states had distinct emission probabilities [Han2014]_. We could implement the codes to reproduce the results by using ``RHmm`` package with the following brief analysis pipeline: 
+To model PTB binding preference, two-state HMM was designed based on triplets in order to assess whether 3nt motif would segregate into two states and whether these two states had distinct emission probabilities [Han2014]_. 
+
+Unlike the research of [Zhang2013]_ where CLIP-seq tags were treated as positive training data set, interestingly the PTB binding cluster identified by CLIP-seq was used in unsupervised learnings. It still makes sense that there were minor regions associating PTB non-binding due to several biological reasons: 
+
+* Recall the step during CLIP-seq library construction. When the single-strand RNA was digested by enzyme, for example `MNase <http://en.wikipedia.org/wiki/Micrococcal_nuclease>`_, the RNA-protein complex is protected from digestion. It does not necessarily means that all the unbound RNA is depleted, in other words there might be certain escaped residues existed flanking the RNA-protein complex. 
+
+.. figure:: _static/c20HMM_rnase.png
+	:scale: 50 % 
+	:align: center
+
+	Scheme from FOX2 CLIP-seq paper [Yeo2009]_ . 
+
+* Footprint is one of the binding features of RBP. If the binding clusters are centered by their very position of highest reads, a "footprint" of RBP would be observed. It indicates the binding sites are not necessarily precise sites, but more likely a short of regions. With this in mind, there are regions highly associated with RBP binding and others less associated. 
+
+.. figure:: _static/c20HMM_Ago_footprint.png
+	:scale: 50 % 
+	:align: center
+
+	Footprint of Ago CLIP-seq paper [Chi2009]_ . 
+
+Collectively there are regions of RNA could be sequenced within CLIP-seq tags and thus provide evidence to make inference about the non-binding state. 
+
+We could implement the codes to reproduce the results by using ``RHmm`` package with the following brief analysis pipeline: 
 
 - Raw data retrieve and munging; 
 - Construct observed sequence path for each read; 
@@ -336,61 +381,73 @@ As a result we have estimated the parameters of HMM modeling PTB binding prefere
 
 	Initial probabilities:
 	       Pi 1      Pi 2
-	  0.3279376 0.6720624
+	  0.3139217 0.6860783
 
 	Transition matrix:
 	          State 1   State 2
-	State 1 0.8124988 0.1875012
-	State 2 0.7279489 0.2720511
+	State 1 0.8149683 0.1850317
+	State 2 0.7304111 0.2695889
 
 	Conditionnal distribution parameters:
 
 	Distribution parameters:
-	                AAA        AAC         AAG         AAU         ACA         ACC
-	State 1 0.002053805 0.00171227 0.002921558 0.004062008 0.001702238 0.004119598
-	State 2 0.026659666 0.02669045 0.018581166 0.029270826 0.024849193 0.019070079
-	                 ACG         ACU         AGA         AGC         AGG
-	State 1 0.0009545203 0.007847316 0.003571282 0.005141578 0.004968771
-	State 2 0.0042811116 0.049837123 0.016124514 0.014469545 0.015340024
-	                AGU         AUA        AUC         AUG        AUU         CAA
-	State 1 0.007489506 0.003924728 0.01476462 0.005052538 0.01347329 0.005563721
-	State 2 0.019660018 0.015210379 0.03463434 0.025846413 0.04669401 0.013701655
-	                CAC        CAG        CAU         CCA        CCC          CCG
-	State 1 0.007087994 0.01072144 0.01785467 0.013107710 0.01146904 0.0036611494
-	State 2 0.020376993 0.01442269 0.02483846 0.003294134 0.00473662 0.0002132302
-	               CCU          CGA          CGC          CGG         CGU
-	State 1 0.03117673 0.0013737549 0.0027200873 4.233660e-03 0.005146979
-	State 2 0.02154137 0.0007451607 0.0002868091 1.914924e-05 0.001748012
-	                CUA        CUC         CUG        CUU         GAA         GAC
-	State 1 0.016619599 0.04564824 0.044308856 0.06249475 0.005378598 0.003293537
-	State 2 0.008393343 0.01467510 0.007747943 0.01867869 0.011986162 0.011816205
-	                GAG         GAU         GCA         GCC         GCG        GCU
-	State 1 0.005374742 0.006428859 0.006176074 0.007123844 0.001613111 0.01686248
-	State 2 0.007391663 0.013159560 0.008755279 0.010752949 0.001284622 0.02543406
-	                GGA         GGC         GGG         GGU         GUA        GUC
-	State 1 0.007897306 0.008914374 0.008259496 0.021292694 0.008996625 0.02168497
-	State 2 0.003091445 0.003453484 0.002429911 0.001723835 0.003756899 0.02106414
-	                GUG        GUU          UAA         UAC          UAG
-	State 1 0.018862773 0.02229759 0.0008606254 0.001296163 0.0007859372
-	State 2 0.005962911 0.02446250 0.0347718127 0.042850016 0.0336709869
-	                UAU         UCA         UCC         UCG        UCU        UGA
-	State 1 0.009279143 0.029338790 0.033592568 0.006527562 0.09150535 0.01019676
-	State 2 0.053780320 0.004609686 0.008172366 0.000611805 0.02612267 0.02084916
-	               UGC        UGG        UGU         UUA         UUC         UUG
-	State 1 0.01901294 0.02669897 0.03650746 0.017918991 0.070980521 0.035614819
-	State 2 0.01816547 0.00453399 0.03746990 0.001830695 0.005125166 0.001564879
-	                UUU
-	State 1 0.072478344
-	State 2 0.006707263
+	                AAA         AAC         AAG         AAU         ACA
+	State 1 0.002383142 0.001988302 0.003097821 0.004226146 0.001995432
+	State 2 0.025786133 0.025971278 0.018121069 0.028874057 0.024075226
+	                ACC          ACG         ACU         AGA         AGC
+	State 1 0.004296758 0.0009777614 0.008180572 0.003830718 0.005312564
+	State 2 0.018605290 0.0042242069 0.049004140 0.015416027 0.014005746
+	                AGG         AGU         AUA        AUC         AUG        AUU
+	State 1 0.005096352 0.007593413 0.004129317 0.01496485 0.005350854 0.01376565
+	State 2 0.015004130 0.019397553 0.014655807 0.03411788 0.025050705 0.04595246
+	                CAA         CAC        CAG        CAU         CCA         CCC
+	State 1 0.005554373 0.007190527 0.01082647 0.01789752 0.012993299 0.011660492
+	State 2 0.013752790 0.020121812 0.01413175 0.02473606 0.003593826 0.004166092
+	                CCG        CCU          CGA          CGC          CGG
+	State 1 0.003661999 0.03098681 0.0013783022 0.0024944800 4.214447e-03
+	State 2 0.000200509 0.02205868 0.0007302127 0.0009282014 6.182563e-05
+	                CGU         CUA        CUC         CUG        CUU         GAA
+	State 1 0.005119809 0.016649674 0.04569612 0.043974551 0.06312030 0.005524635
+	State 2 0.001815995 0.008282352 0.01444509 0.008600124 0.01674955 0.011585987
+	                GAC         GAG         GAU         GCA         GCC
+	State 1 0.003385939 0.005436000 0.006501759 0.006188076 0.007126983
+	State 2 0.011575944 0.007221552 0.012970029 0.008728458 0.010754741
+	                GCG        GCU         GGA         GGC         GGG         GGU
+	State 1 0.001602458 0.01690951 0.007828274 0.008870517 0.008232480 0.020662642
+	State 2 0.001314269 0.02532439 0.003275595 0.003563300 0.002490208 0.003476972
+	                GUA        GUC         GUG        GUU          UAA         UAC
+	State 1 0.008955899 0.02164476 0.018687619 0.02221290 0.0002625711 0.002043933
+	State 2 0.003858372 0.02117789 0.006428045 0.02471246 0.0365923675 0.040823962
+	                UAG         UAU         UCA         UCC          UCG
+	State 1 0.001035275 0.009639421 0.029376269 0.033462720 0.0066478156
+	State 2 0.033052139 0.052877132 0.004428215 0.008469919 0.0002484275
+	               UCU        UGA        UGC         UGG        UGU         UUA
+	State 1 0.09058445 0.01043319 0.01899602 0.026031526 0.03641284 0.017888266
+	State 2 0.02857544 0.02020113 0.01821159 0.006386885 0.03774479 0.001871079
+	                UUC        UUG         UUU
+	State 1 0.069744980 0.03439432 0.072667103
+	State 2 0.008481177 0.00497244 0.005968508
 
-:underline:`Visualization`. 
+:underline:`Visualization`. Since human eyes are more sensitive to changes in horizontal length, I prefer to putting emission probabilities at the x-axis and also the triplet sequence in the y-axis so that you don't need to twist you head. 
 
 .. literalinclude:: _scripts/c20HMM/c20HMM_PTB_visualize_model.R
     :language: r
 
-.. figure:: _static/c20_PTB_estimated_emis.png
-	:scale: 50 %
+.. figure:: _static/c20_PTB_estimated_emis_trial2_flip.png
+	:width: 600
 	:align: center
+
+:underline:`Short Discussion`. My emission probabilities plot is consistent with the published figure. CU-rich motifs are ranked in the top in both results. But I would guess that maybe there is typo error denoting the transition probabilities in the paper: :math:`\mathbf{P}\left(state2 \Rightarrow state1\right)` and :math:`\mathbf{P}\left(state2 \Rightarrow state2\right)` should be exchanged. It makes clear sense under State 1. Think in HMM again. :math:`\mathbf{P}\left(state1 \Rightarrow state1\right)` is larger than :math:`\mathbf{P}\left(state1 \Rightarrow state2\right)` so that under State 1 it would more likely stick with State 1 rather change to State 2. It is consistent to  the big presumption that CLIP-seq sequenced reads are highly associated with RBP binding with tolerance of some minor non-binding regions. If :math:`\mathbf{P}\left(state2 \Rightarrow state1\right)`  were 0.78 and :math:`\mathbf{P}\left(state2 \Rightarrow state2\right)` were 0.22, State 2 would prefer sticking to itself as well and the principle of CLIP-seq technology would be violated badly. 
+
+My transition probabilities matrix: 
+
+.. code-block:: bash
+
+          State 1   State 2
+	State 1 0.8149683 0.1850317
+	State 2 0.7304111 0.2695889
+
+On State 1 our results are similar to published paper with in mind that different initial value would lead to different outcome. On the other hand, the pattern of State 2 is opposite. 
 
 
 .. _c20-SVM:
@@ -410,6 +467,10 @@ Random Forest
 
 References
 -------------------------
+
+.. [Chi2009] Chi, Sung Wook, et al. "Argonaute HITS-CLIP decodes microRNA–mRNA interaction maps." Nature 460.7254 (2009): 479-486.
+
+.. [Yeo2009] Yeo, Gene W., et al. "An RNA code for the FOX2 splicing regulator revealed by mapping RNA-protein interactions in stem cells." Nature structural & molecular biology 16.2 (2009): 130-137.
 
 .. [Eddy2004] Eddy, S. R. What is a hidden Markov model? Nat. Biotechnol. 22, 1315–1316 (2004).
 

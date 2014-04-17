@@ -114,14 +114,15 @@
             
   <div class="section" id="model-and-predict-rbp-binding-preference">
 <h1>Model and Predict RBP Binding Preference<a class="headerlink" href="#model-and-predict-rbp-binding-preference" title="Permalink to this headline">¶</a></h1>
-<p>With methods mentioned in previous chapter we could hopefully distinguish the informative signals from the sequencing noises. Results achieved at this step could be enough for most exploratory researches. However, what if we take a further step? What could we learn from the confident results? Could we learn about the binding preference of RNA binding proteins and construct models to unveil why RBP binds here but not there? Could we even predict the global binding sites of RBP? It does not necessarily means making CLIP-seq <em>in silico</em> possible, but machine learning methods could yield promising supplement to the real signals which could be left out by the empirical thresholding.</p>
+<p>With methods mentioned in previous chapter we could hopefully distinguish the informative signals from the sequencing noises. Results achieved at this step could be enough for most exploratory researches. However, what if we take a further step? What could we learn from the confident results? Could we learn about the binding preference of RNA binding proteins and construct models to unveil why RBP binds here but not there? Could we even predict the global binding sites of RBP? It does not necessarily means making CLIP-seq <em>in silico</em> possible, but machine learning methods could yield promising supplement to the real signals which are often left out due to the empirical thresholding.</p>
+<p>Hidden Markov Model, SVM, Graph Kernel, Random forest have been applied in researches investigating RBP binding preferences with high-quality publications.</p>
 <div class="section" id="hidden-markov-model">
 <span id="c20-hmm"></span><h2>Hidden Markov Model<a class="headerlink" href="#hidden-markov-model" title="Permalink to this headline">¶</a></h2>
-<p>In the beginning of this section I would like to introduce HMM by a toy application: 5&#8217; end splicing site recognition, which was originated from NBT paper <a class="reference internal" href="#eddy2004" id="id1">[Eddy2004]</a>. Admittedly this toy HMM is naive, it hopefully could help you take first step knowing how to infer the most possible splicing site, simply starting from raw DNA/RNA sequence together with some prior knowledges. For now we begin with the sequence: <em>CTTCATGTGAAAGCAGACGTAAGTCA</em>. Series of ideas and concepts would be illustrated step by step so that you could see how the biological question was translated to mathematical questions. Hopefully after you have known HMM I would introduce how HMM was employed in RBP science researches (<a class="reference internal" href="#zhang2013" id="id2">[Zhang2013]</a> and <a class="reference internal" href="#han2014" id="id3">[Han2014]</a>).</p>
+<p>In the beginning of this section I would like to introduce HMM by a toy application: 5&#8217; end splicing site recognition, which was originated from NBT paper <a class="reference internal" href="#eddy2004" id="id1">[Eddy2004]</a>. Admittedly this toy HMM is naive, it hopefully could help you take first step knowing how to infer the most possible splicing site by simply starting from raw DNA/RNA sequence together with some prior knowledges, for example sequence: <tt class="docutils literal"><span class="pre">CTTCATGTGAAAGCAGACGTAAGTCA</span></tt>. Series of concepts and elements of HMM would be illustrated step by step so that you could see how the biological question was translated to mathematical questions and <em>vice versa</em>. Hopefully after you have known HMM I would introduce how HMM was employed in RBP science researches (<a class="reference internal" href="#han2014" id="id2">[Han2014]</a> and <a class="reference internal" href="#zhang2013" id="id3">[Zhang2013]</a>).</p>
 <div class="section" id="sequence-path-v-s-state-path">
 <h3>Sequence Path v.s. State Path<a class="headerlink" href="#sequence-path-v-s-state-path" title="Permalink to this headline">¶</a></h3>
-<p>Sequence could be read by sequencing and thus observed. Each nucleotide residing on the DNA string belongs to some bio-functional regions. They are exons to be transcribed in the mature RNA, introns to be spliced out and splicing site, the boundary of exon and intron. These regions of different functions could be described as different states.</p>
-<p>Four basic types of nucleotides (A, T, C, G) come together to form a sequence path. Likewise, the state path is composed of &#8220;E&#8221;, &#8220;I&#8221;, and &#8220;5&#8221;, denoting &#8220;Exon&#8221;, &#8220;Intron&#8221; and &#8220;5&#8217;-end Splicing Site&#8221; respectively. For convenience we disregard 3&#8217; end splicing sites here.</p>
+<p>For one thing, transcriptome or genome sequence could be read by sequencing and thus is observed. Four basic types of nucleotides (A, T, C, G) come together to form a <strong>sequence path</strong>. For another, each nucleotide residing on the DNA string belongs to some bio-functional regions. They could be either exons to be transcribed in the mature RNA, or introns to be spliced out, or splicing site, the boundary of exon and intron. These regions of different functions could be described as different states. Likewise, the <strong>state path</strong> is composed of &#8220;E&#8221;, &#8220;I&#8221;, and &#8220;5&#8221;, denoting &#8220;Exon&#8221;, &#8220;Intron&#8221; and &#8220;5&#8217;-end Splicing Site&#8221; respectively.</p>
+<p>For convenience we disregard 3&#8217; end splicing sites in our toy HMM.</p>
 <p>For example:</p>
 <div class="highlight-python"><div class="highlight"><pre>Sequence Path: CTTCATGTGAAAGCAGACGTAAGTCA
 State    Path: EEEEEEEEEEEEEEEEEE5IIIIIII
@@ -131,8 +132,8 @@ State    Path: EEEEEEEEEEEEEEEEEE5IIIIIII
 </div>
 <div class="section" id="why-hidden">
 <h3>Why Hidden?<a class="headerlink" href="#why-hidden" title="Permalink to this headline">¶</a></h3>
-<p>At first sight whether GC-rich or AT-rich of a DNA string could be quickly determined given the sequence path, however you could barely say the state path immediately. This is where the &#8220;hidden&#8221; comes from.</p>
-<p>The observed sequence path alone cannot help us to reveal the unobserved state path. With additional prior knowledge, for example, the distribution of A/T/G/C in each state, we could unveil the most possible E/I/5 state path in a <strong>top-bottom</strong> fashion.</p>
+<p>At first sight whether GC-rich or AT-rich of a DNA string could be quickly determined given the sequence path, however you could barely figure out the state path immediately. This is where the &#8220;hidden&#8221; comes from.</p>
+<p>To uncover the dark matter, the observed sequence path alone cannot help us to reveal the unobserved state path. With additional prior knowledge, for example, the distribution of A/T/G/C in each state, we could unveil the most possible E/I/5 state path in a <strong>top-bottom</strong> fashion.</p>
 </div>
 <div class="section" id="think-in-hmm">
 <h3>Think in HMM<a class="headerlink" href="#think-in-hmm" title="Permalink to this headline">¶</a></h3>
@@ -146,9 +147,9 @@ I 0.4 0.1 0.1 0.4
 </div>
 <div class="figure align-center">
 <a class="reference internal image-reference" href="_images/c20HMM_Emission_Prob1.png"><img alt="_images/c20HMM_Emission_Prob1.png" src="_images/c20HMM_Emission_Prob1.png" /></a>
-<p class="caption">Distribution of A, C, G, T in toy intron. <em>(See R scripts to generate pie chart in final section in case of your curiosity)</em></p>
+<p class="caption">Distribution of A, C, G, T in toy intron. It means that in general within intron regions you would expect each 40% of A and T, each 10% G and C. <em>(See R scripts to generate pie chart in final section in case of your curiosity)</em></p>
 </div>
-<p>The <strong>emission probabilities</strong> under intron state could be described as the above roulette wheel. To generate a DNA string given the emission probabilities of intron, it is straightforward to implement sampling intron sequence of 26nt using <tt class="docutils literal"><span class="pre">R</span></tt> language:</p>
+<p>The <strong>emission probabilities</strong> under intron state could be described as the above roulette wheel. To generate a DNA string given the emission probabilities of intron, it is straightforward to implement sampling intron sequence of 26nt using <tt class="docutils literal"><span class="pre">sample</span></tt> function in <tt class="docutils literal"><span class="pre">R</span></tt> language:</p>
 <div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> set.seed<span class="p">(</span><span class="m">1026</span><span class="p">)</span>
 <span class="o">&gt;</span> dna.bases <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span> <span class="s">&quot;C&quot;</span><span class="p">,</span> <span class="s">&quot;G&quot;</span><span class="p">,</span> <span class="s">&quot;T&quot;</span><span class="p">)</span>
 <span class="o">&gt;</span> intron.emission.prob <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0.40</span><span class="p">,</span> <span class="m">0.10</span><span class="p">,</span> <span class="m">0.10</span><span class="p">,</span> <span class="m">0.40</span><span class="p">)</span>
@@ -156,18 +157,17 @@ I 0.4 0.1 0.1 0.4
 <span class="o">&gt;</span> sample.seq <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> dna.bases<span class="p">,</span> prob <span class="o">=</span> intron.emission.prob<span class="p">,</span>
                                                 size <span class="o">=</span> seq.len<span class="p">,</span> replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">)</span>
 <span class="o">&gt;</span> cat<span class="p">(</span>sample.seq<span class="p">,</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
-<span class="o">&gt;</span> table<span class="p">(</span>sample.seq<span class="p">)</span>
 A C A G A A A A A A A <span class="k-Variable">T</span> G A <span class="k-Variable">T</span> A A A C A G G G A A <span class="k-Variable">T</span>
 </pre></div>
 </div>
-<p>You could even double-check whether this string follow your prior set distribution. I give you result of 1000nt sequence by setting <tt class="docutils literal"><span class="pre">seq.len</span> <span class="pre">&lt;-</span> <span class="pre">1000</span></tt> without changing other codes:</p>
+<p>You could even double-check whether the generated string follows your prior set distribution. I give you result of a long sequence, i.e. 1000nt by setting <tt class="docutils literal"><span class="pre">seq.len</span> <span class="pre">&lt;-</span> <span class="pre">1000</span></tt> without changing other lines of codes:</p>
 <div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> table<span class="p">(</span>sample.seq<span class="p">)</span>
 sample.seq
   A   C   G   <span class="k-Variable">T</span>
 <span class="m">396</span>  <span class="m">81</span> <span class="m">101</span> <span class="m">422</span>
 </pre></div>
 </div>
-<p>Emission probabilities of each state is dedicated to generate observed base. Don&#8217;t forget we assume we are HMM now. If we clearly know state status of each base, we could immediately sample its nucleotide given the emission probabilities. Previously we set <tt class="docutils literal"><span class="pre">seq.len</span></tt> as <tt class="docutils literal"><span class="pre">26</span></tt> or <tt class="docutils literal"><span class="pre">1000</span></tt> to generate sequence of corresponding length. In the same way, we could give the individual base a nucleotide by setting <tt class="docutils literal"><span class="pre">seq.len</span> <span class="pre">&lt;-</span> <span class="pre">1</span></tt>.</p>
+<p>Emission probabilities of each state is dedicated to generate observed base. Don&#8217;t forget we assume we are HMM now. If we clearly know state status of each base, we could immediately sample its nucleotide given the emission probabilities. Previously we set <tt class="docutils literal"><span class="pre">seq.len</span></tt> as <tt class="docutils literal"><span class="pre">26</span></tt> or <tt class="docutils literal"><span class="pre">1000</span></tt> to generate sequence of corresponding length. In the same way, we could assign the individual base of intron a nucleotide by setting <tt class="docutils literal"><span class="pre">seq.len</span> <span class="pre">&lt;-</span> <span class="pre">1</span></tt>.</p>
 <p>This story under intron state could be exactly applied to exon, splicing sites states as well. Thus we have three wheels of emission probabilities under three different states.</p>
 </div>
 <div class="section" id="transition-probs">
@@ -186,7 +186,7 @@ sample.seq
 E <span class="m">0.9</span> <span class="m">0.1</span> <span class="m">0</span>
 </pre></div>
 </div>
-<p>It means the probability of continuing exon state is 0.9 whereas changing to 5&#8217; end splicing site state is 0.1. Note that in our toy model exon cannot directly jump to intron state.</p>
+<p>It means the probability of continuing exon state is 0.9 whereas changing to 5&#8217; end splicing site state is 0.1. You could tell that transition probabilities describe the linear order in which we expect the states to occur: one or more Es, one 5, one or more Is. Note that in our toy model exon cannot directly jump to intron state.</p>
 <p>You cannot be unfamiliar with the following codes to choose state for next base:</p>
 <div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> set.seed<span class="p">(</span><span class="m">1026</span><span class="p">)</span>
 <span class="o">&gt;</span> sample.state <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> state.bases<span class="p">,</span> prob <span class="o">=</span> exon.transition.prob<span class="p">,</span>
@@ -227,7 +227,61 @@ I   0 0.0 0.0 0.9 0.1
 N   0 0.0 0.0 0.0 1.0
 </pre></div>
 </div>
-<p>Check the source R script to find <tt class="docutils literal"><span class="pre">GenerateHMMSeq</span></tt> function. After you type the following in the R console, TA-DA, a sequence with HMM in mind is generated.</p>
+<p>Check the source R script to find <tt class="docutils literal"><span class="pre">GenerateHMMSeq</span></tt> function.</p>
+<div class="highlight-r"><div class="highlight"><pre><span class="c1">## -----------------------------</span>
+<span class="c1">## Generating sequence</span>
+<span class="c1">## -----------------------------</span>
+<span class="c1">## Construct transition matrix</span>
+S <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">1</span><span class="p">,</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">3</span><span class="p">))</span>
+E <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">0.9</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
+SS5 <span class="o">&lt;-</span> c<span class="p">(</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">3</span><span class="p">),</span> <span class="m">1</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
+I <span class="o">&lt;-</span> c<span class="p">(</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">3</span><span class="p">),</span> <span class="m">0.9</span><span class="p">,</span> <span class="m">0.1</span><span class="p">)</span>
+N <span class="o">&lt;-</span> c<span class="p">(</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">4</span><span class="p">),</span> <span class="m">1</span><span class="p">)</span>
+myTransMtx <span class="o">&lt;-</span> rbind<span class="p">(</span>S<span class="p">,</span>E<span class="p">,</span> SS5<span class="p">,</span> I<span class="p">,</span> N<span class="p">)</span>
+colnames<span class="p">(</span>myTransMtx<span class="p">)</span> <span class="o">&lt;-</span> rownames<span class="p">(</span>myTransMtx<span class="p">)</span>
+print<span class="p">(</span>myTransMtx<span class="p">)</span>
+<span class="c1">## Construct emission matrix</span>
+S <span class="o">&lt;-</span> rep<span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">4</span><span class="p">)</span>
+E <span class="o">&lt;-</span> rep<span class="p">(</span><span class="m">1</span><span class="o">/</span><span class="m">4</span><span class="p">,</span> <span class="m">4</span><span class="p">)</span>
+SS5 <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0.05</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0.95</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
+I <span class="o">&lt;-</span> c<span class="p">(</span><span class="m">0.4</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> <span class="m">0.4</span><span class="p">)</span>
+N <span class="o">&lt;-</span> c<span class="p">(</span>rep<span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">4</span><span class="p">))</span>
+myEmisMtx <span class="o">&lt;-</span> rbind<span class="p">(</span>S<span class="p">,</span>E<span class="p">,</span> SS5<span class="p">,</span> I<span class="p">,</span> N<span class="p">)</span>
+colnames<span class="p">(</span>myEmisMtx<span class="p">)</span> <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">,</span> <span class="s">&quot;C&quot;</span><span class="p">,</span> <span class="s">&quot;G&quot;</span><span class="p">,</span> <span class="s">&quot;T&quot;</span><span class="p">)</span>
+print<span class="p">(</span>myEmisMtx<span class="p">)</span>
+<span class="c1">## Function to generate sequence</span>
+GenerateHMMSeq <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>emmisionMx<span class="p">,</span> transitionMx<span class="p">,</span> len<span class="p">){</span>
+    state.bases <span class="o">&lt;-</span> row.names<span class="p">(</span>emmisionMx<span class="p">)</span>
+    dna.bases   <span class="o">&lt;-</span> colnames<span class="p">(</span>emmisionMx<span class="p">)</span>
+    out.seq.path <span class="o">&lt;-</span> rep<span class="p">(</span><span class="kc">NA</span><span class="p">,</span> len<span class="p">)</span>
+    out.state.path <span class="o">&lt;-</span> rep<span class="p">(</span><span class="kc">NA</span><span class="p">,</span> len<span class="p">)</span>
+    <span class="c1">## State of first base is &quot;Start&quot;</span>
+    state0 <span class="o">&lt;-</span> <span class="s">&quot;S&quot;</span>
+    cat<span class="p">(</span><span class="s">&quot;Start\n&quot;</span><span class="p">)</span>
+    
+    <span class="kr">for</span> <span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span>len<span class="p">)</span> <span class="p">{</span>
+        <span class="c1">## Choose State</span>
+        state.i <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> state.bases<span class="p">,</span> prob <span class="o">=</span> transitionMx<span class="p">[</span>state0<span class="p">,</span> <span class="p">],</span> 
+                          replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">,</span> size <span class="o">=</span> <span class="m">1</span><span class="p">)</span>
+        <span class="kr">if</span><span class="p">(</span>state.i <span class="o">==</span> <span class="s">&quot;N&quot;</span><span class="p">){</span>
+            out.state.path<span class="p">[</span>i<span class="p">]</span> <span class="o">&lt;-</span> state.i
+            cat<span class="p">(</span><span class="s">&quot;End\n&quot;</span><span class="p">)</span>
+            <span class="kr">break</span>
+        <span class="p">}</span>
+        base.i  <span class="o">&lt;-</span> sample<span class="p">(</span>x <span class="o">=</span> dna.bases<span class="p">,</span> prob <span class="o">=</span> emmisionMx<span class="p">[</span>state.i<span class="p">,</span> <span class="p">],</span> 
+                          replace <span class="o">=</span> <span class="k-Variable">T</span><span class="p">,</span> size <span class="o">=</span> <span class="m">1</span><span class="p">)</span>
+        cat<span class="p">(</span><span class="s">&quot;Base&quot;</span><span class="p">,</span> i<span class="p">,</span> <span class="s">&quot;is&quot;</span><span class="p">,</span> base.i<span class="p">,</span> <span class="s">&quot;under&quot;</span><span class="p">,</span> state.i<span class="p">,</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
+        out.state.path<span class="p">[</span>i<span class="p">]</span> <span class="o">&lt;-</span> state.i
+        out.seq.path<span class="p">[</span>i<span class="p">]</span> <span class="o">&lt;-</span> base.i
+        state0 <span class="o">&lt;-</span> state.i
+    <span class="p">}</span>
+    cat<span class="p">(</span><span class="s">&quot;Seq Path:&quot;</span><span class="p">,</span> na.omit<span class="p">(</span>out.seq.path<span class="p">),</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    cat<span class="p">(</span><span class="s">&quot;StatPath:&quot;</span><span class="p">,</span> na.omit<span class="p">(</span>out.state.path<span class="p">),</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    <span class="kr">return</span><span class="p">(</span><span class="m">1</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>After you type the following in the R console, Aha, a sequence with HMM in mind is generated.</p>
 <div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> set.seed<span class="p">(</span><span class="m">1026</span><span class="p">)</span>
 <span class="o">&gt;</span> GenerateHMMSeq<span class="p">(</span>emmisionMx<span class="o">=</span>myEmisMtx<span class="p">,</span> transitionMx<span class="o">=</span>myTransMtx<span class="p">,</span> len<span class="o">=</span><span class="m">20</span><span class="p">)</span>
 Start
@@ -252,7 +306,7 @@ StatPath<span class="o">:</span> E E E E E E E E E SS5 I I I I I N
 <span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="m">1</span>
 </pre></div>
 </div>
-<p>You may noticed that in this case the length of output sequence is 15 though 20 is pre-defined. Is it wrong? No, because the probability of changing from &#8220;Intron&#8221; to &#8220;End&#8221; state is <tt class="docutils literal"><span class="pre">0.1</span></tt>, not <tt class="docutils literal"><span class="pre">0</span></tt>, Ongoing &#8220;Intron&#8221; state is possible to choose &#8220;End&#8221; state for next base.</p>
+<p>You must have noticed that in this case the length of output sequence is 15 though 20 is pre-defined. Is it wrong? No, because the probability of changing from &#8220;Intron&#8221; to &#8220;End&#8221; state is <tt class="docutils literal"><span class="pre">0.1</span></tt>, not <tt class="docutils literal"><span class="pre">0</span></tt>, Ongoing &#8220;Intron&#8221; state is possible to choose &#8220;End&#8221; state for next base so that the generating process would be pre-terminated.</p>
 </div>
 </div>
 <div class="section" id="judge-possible-state-path">
@@ -269,7 +323,34 @@ State    Path: EEEEEEEEEEEEEEEEEE5IIIIIII
 <div class="math">
 \[\left( 0.25^{18} * 0.95 * 0.4^3 * 0.1 * 0.1 * 0.4^2 \right) * \left(1 * 0.9^{17} * 0.1 * 1 * 0.9^6 * 0.1 \right)\]</div>
 <p>26nt sequence has 26 emissions and 27 transitions (note the final end state).</p>
-<p>See <tt class="docutils literal"><span class="pre">ComputeStatePathProb</span></tt> function for details and it could yield:</p>
+<p>See <tt class="docutils literal"><span class="pre">ComputeStatePathProb</span></tt> function for details:</p>
+<div class="highlight-r"><div class="highlight"><pre><span class="c1">## --------------------------</span>
+<span class="c1">## Compute Prob of state path</span>
+<span class="c1">## --------------------------</span>
+ComputeStatePathProb <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>seqPath<span class="p">,</span> statePath<span class="p">,</span> transMtx<span class="p">,</span> emisMtx<span class="p">,</span> log<span class="o">=</span><span class="kc">TRUE</span><span class="p">){</span>
+    seqPath <span class="o">&lt;-</span> unlist<span class="p">(</span>strsplit<span class="p">(</span>toupper<span class="p">(</span>seqPath<span class="p">),</span> <span class="s">&quot;&quot;</span><span class="p">))</span>
+    statePath <span class="o">&lt;-</span> unlist<span class="p">(</span>strsplit<span class="p">(</span>statePath<span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">))</span>
+    statePath<span class="p">[</span>statePath<span class="o">==</span><span class="s">&quot;5&quot;</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="s">&quot;SS5&quot;</span>
+    <span class="c1">## First base</span>
+    <span class="c1">## previous is under Start State</span>
+    prob <span class="o">&lt;-</span>  transMtx<span class="p">[</span><span class="s">&quot;S&quot;</span><span class="p">,</span> statePath<span class="p">[</span><span class="m">1</span><span class="p">]]</span> <span class="o">*</span> emisMtx<span class="p">[</span>statePath<span class="p">[</span><span class="m">1</span><span class="p">],</span> seqPath<span class="p">[</span><span class="m">1</span><span class="p">]]</span>
+    <span class="kr">for</span> <span class="p">(</span>i <span class="kr">in</span> <span class="m">2</span><span class="o">:</span>length<span class="p">(</span>seqPath<span class="p">)){</span>
+        state.i <span class="o">&lt;-</span> statePath<span class="p">[</span>i<span class="p">]</span>
+        nucleotide.i <span class="o">&lt;-</span> seqPath<span class="p">[</span>i<span class="p">]</span>
+        prob.i <span class="o">&lt;-</span> transMtx<span class="p">[</span>statePath<span class="p">[</span>i<span class="m">-1</span><span class="p">],</span>state.i<span class="p">]</span> <span class="o">*</span> emisMtx<span class="p">[</span>statePath<span class="p">[</span>i<span class="p">],</span> nucleotide.i<span class="p">]</span>
+        prob <span class="o">&lt;-</span> prob <span class="o">*</span> prob.i
+    <span class="p">}</span>
+    <span class="c1">## End State</span>
+    prob <span class="o">&lt;-</span> prob <span class="o">*</span> transMtx<span class="p">[</span>statePath<span class="p">[</span>length<span class="p">(</span>statePath<span class="p">)],</span> <span class="s">&quot;N&quot;</span><span class="p">]</span>
+    <span class="kr">if</span> <span class="p">(</span>log<span class="p">){</span>
+        <span class="kr">return</span> <span class="p">(</span>log2<span class="p">(</span>prob<span class="p">)</span><span class="o">/</span>log2<span class="p">(</span>exp<span class="p">(</span><span class="m">1</span><span class="p">)))</span> 
+    <span class="p">}</span> <span class="kr">else</span> <span class="p">{</span>
+        <span class="kr">return</span> <span class="p">(</span>prob<span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>and it could yield:</p>
 <div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> demo.seq.path <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;CTTCATGTGAAAGCAGACGTAAGTCA&quot;</span><span class="p">)</span>
 <span class="o">&gt;</span> demo.state.path <span class="o">&lt;-</span> c<span class="p">(</span><span class="s">&quot;EEEEEEEEEEEEEEEEEE5IIIIIII&quot;</span><span class="p">)</span>
 <span class="o">&gt;</span> ComputeStatePathProb<span class="p">(</span>seqPath <span class="o">=</span> demo.seq.path<span class="p">,</span> statePath <span class="o">=</span> demo.state.path<span class="p">,</span>
@@ -284,7 +365,38 @@ State    Path: EEEEEEEEEEEEEEEEEE5IIIIIII
 <a class="reference internal image-reference" href="_images/HMMandSplicingSite.png"><img alt="_images/HMMandSplicingSite.png" src="_images/HMMandSplicingSite.png" /></a>
 <p class="caption">Most possible state path.</p>
 </div>
-<p>Among all the possible combinations of state path, how to pick up the most possible state path? There is one naive way: enumerate all the candidates, compute their probability, and pick up the highest one.</p>
+<p>Among all the possible combinations of state path, how to pick up the most possible state path? There is one naive way: enumerate all the candidates, compute their probability, and pick up the highest one. The code is :</p>
+<div class="highlight-r"><div class="highlight"><pre>InspectorHMM <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>obsSeq<span class="p">,</span> transMtx<span class="p">,</span> emisMtx <span class="p">){</span>
+    sumProb <span class="o">&lt;-</span> <span class="m">0</span>
+    allPath <span class="o">&lt;-</span> <span class="kc">NULL</span>
+    allProb <span class="o">&lt;-</span> <span class="kc">NULL</span>
+    print <span class="p">(</span><span class="s">&quot;All State Path with non-zero Probability: &quot;</span><span class="p">)</span>
+    <span class="kr">for</span> <span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span><span class="m">24</span><span class="p">)</span> <span class="p">{</span>
+        path_i <span class="o">&lt;-</span> c<span class="p">(</span>rep<span class="p">(</span><span class="s">&quot;E&quot;</span><span class="p">,</span> i<span class="p">),</span> <span class="s">&quot;5&quot;</span><span class="p">,</span> rep<span class="p">(</span><span class="s">&quot;I&quot;</span><span class="p">,</span> <span class="m">25</span><span class="o">-</span>i<span class="p">))</span>
+        path_i <span class="o">&lt;-</span> paste<span class="p">(</span>path_i<span class="p">,</span> collapse<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">)</span>
+        allPath<span class="p">[</span>i<span class="p">]</span> <span class="o">&lt;-</span> path_i
+        
+        p <span class="o">&lt;-</span> computeProb<span class="p">(</span>obsSeq<span class="p">,</span> path_i<span class="p">,</span>transMtx<span class="p">,</span> emisMtx<span class="p">,</span>log<span class="o">=</span><span class="kc">FALSE</span><span class="p">)</span>
+        allProb<span class="p">[</span>i<span class="p">]</span> <span class="o">&lt;-</span> p 
+        <span class="kr">if</span> <span class="p">(</span>p <span class="o">!=</span> <span class="m">0</span><span class="p">){</span>
+            print <span class="p">(</span>path_i<span class="p">)</span>
+            print <span class="p">(</span>p<span class="p">)</span>
+            sumProb <span class="o">&lt;-</span> sumProb <span class="o">+</span> p 
+        <span class="p">}</span>
+    <span class="p">}</span>
+    maxProb <span class="o">&lt;-</span> max<span class="p">(</span>allProb<span class="p">,</span> na.rm<span class="o">=</span><span class="kc">TRUE</span><span class="p">)</span>
+    max <span class="o">&lt;-</span> which<span class="p">(</span>allProb <span class="o">==</span> maxProb<span class="p">)</span>
+    cat <span class="p">(</span><span class="s">&quot;Best State Path and original Sequence&quot;</span><span class="p">,</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    cat <span class="p">(</span>allPath<span class="p">[</span>max<span class="p">],</span> <span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    cat <span class="p">(</span>obsSeq<span class="p">,</span><span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    cat <span class="p">(</span>paste<span class="p">(</span><span class="s">&quot;Maximum Probability: &quot;</span><span class="p">,</span> maxProb<span class="p">,</span> sep<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">),</span><span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    cat <span class="p">(</span>paste<span class="p">(</span><span class="s">&quot;Maximum Prob (log):  &quot;</span><span class="p">,</span> log2<span class="p">(</span>maxProb<span class="p">)</span><span class="o">/</span>log2<span class="p">(</span>exp<span class="p">(</span><span class="m">1</span><span class="p">)),</span> sep<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">),</span><span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    cat <span class="p">(</span>paste<span class="p">(</span><span class="s">&quot;Posterior Decoding:  &quot;</span><span class="p">,</span> maxProb<span class="o">/</span>sumProb<span class="p">,</span> sep<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">),</span><span class="s">&quot;\n&quot;</span><span class="p">)</span>
+    <span class="kr">return</span> <span class="p">(</span>allPath<span class="p">[</span>max<span class="p">])</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Running <tt class="docutils literal"><span class="pre">InspectorHMM</span></tt> would yield:</p>
 <div class="highlight-r"><div class="highlight"><pre><span class="o">&gt;</span> InspectorHMM<span class="p">(</span>demo.seq.path<span class="p">,</span> myTransMtx<span class="p">,</span> myEmisMtx<span class="p">)</span>
 <span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;All State Path with non-zero Probability: &quot;</span>
 <span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEE5IIIIIIIIIIIIIIIIIIIII&quot;</span>
@@ -324,7 +436,8 @@ Posterior Decoding<span class="o">:</span>  <span class="m">0.461971754327234</s
 <span class="p">[</span><span class="m">1</span><span class="p">]</span> <span class="s">&quot;EEEEEEEEEEEEEEEEEE5IIIIIII&quot;</span>
 </pre></div>
 </div>
-<p>So far hopefully you have understood the principles of HMM. Obviously we cannot use the enumerate methods because when the length of sequence is increasing we could barely afford the time and computing resources to do that. We do have smarter algorithms. Keep reading.</p>
+<p>The best state path is <tt class="docutils literal"><span class="pre">EEEEEEEEEEEEEEEEEE5IIIIIII</span></tt> of sequence path <tt class="docutils literal"><span class="pre">CTTCATGTGAAAGCAGACGTAAGTCA</span></tt>.</p>
+<p>Hopefully you have understood the principles of HMM. Obviously we cannot use the enumerate methods because when the length of sequence is increasing we could barely afford the time and computing resources to do that. We do have smarter algorithms.</p>
 </div>
 <div class="section" id="viterbi-algorithm">
 <h4>Viterbi algorithm<a class="headerlink" href="#viterbi-algorithm" title="Permalink to this headline">¶</a></h4>
@@ -333,19 +446,38 @@ Posterior Decoding<span class="o">:</span>  <span class="m">0.461971754327234</s
 <div class="section" id="estimate-hmm-in-action">
 <h3>Estimate HMM in action<a class="headerlink" href="#estimate-hmm-in-action" title="Permalink to this headline">¶</a></h3>
 <p>In the 5&#8217;-end splicing end recognition toy model, the emission and transition probabilities are presumed so that we could estimate the most possible state path which is the best explanation for the observed sequence.</p>
-<p>But the question is where we could know about the emission and transition probabilities of HMM before we tackle HMM? How could we learn the parameters of HMM? The solutions to this question would be split into two branches: supervised learnings and unsupervised learnings. The algorithms behind these would be introduced in the following. Luckily there are several convenient <tt class="docutils literal"><span class="pre">R</span></tt> packages that associate with HMM.</p>
+<p>But another big question is where we could know about the emission and transition probabilities of HMM before we tackle HMM? How could we learn the parameters of HMM? The solutions to this question would be split into two branches: supervised learnings and unsupervised learnings. The algorithms behind these, for example Baum-Welch algorithm, would be introduced. Luckily there are several convenient <tt class="docutils literal"><span class="pre">R</span></tt> packages that associate with HMM.</p>
 <ul class="simple">
 <li>HMM</li>
 <li>RHmm</li>
 <li>depmixS4</li>
 <li>mhsmm</li>
 </ul>
+<p>The context here is modeling and even predict RBP binding preference. As previously mentioned in Chapter 1, the sequenced tags generated in CLIP-seq experiments are considered the binding regions of RBP. The continuous regions with high signals, called RBP binding cluster,  indicate high affinity between these RNA regions and RBP.</p>
+<p>With observed CLIP-seq tags and therefore the sequence of RBP binding clusters, we are trying to train HMM model wit best explanations to the observed path.</p>
 <div class="section" id="supervised-learning">
 <h4>Supervised Learning<a class="headerlink" href="#supervised-learning" title="Permalink to this headline">¶</a></h4>
 </div>
 <div class="section" id="unsupervised-learning">
 <h4>Unsupervised Learning<a class="headerlink" href="#unsupervised-learning" title="Permalink to this headline">¶</a></h4>
-<p>To model PTB binding preference, two-state HMM was designed based on triplets in order to assess whether 3nt motif would segregate into two states and whether these two states had distinct emission probabilities <a class="reference internal" href="#han2014" id="id5">[Han2014]</a>. We could implement the codes to reproduce the results by using <tt class="docutils literal"><span class="pre">RHmm</span></tt> package with the following brief analysis pipeline:</p>
+<p>To model PTB binding preference, two-state HMM was designed based on triplets in order to assess whether 3nt motif would segregate into two states and whether these two states had distinct emission probabilities <a class="reference internal" href="#han2014" id="id5">[Han2014]</a>.</p>
+<p>Unlike the research of <a class="reference internal" href="#zhang2013" id="id6">[Zhang2013]</a> where CLIP-seq tags were treated as positive training data set, interestingly the PTB binding cluster identified by CLIP-seq was used in unsupervised learnings. It still makes sense that there were minor regions associating PTB non-binding due to several biological reasons:</p>
+<ul class="simple">
+<li>Recall the step during CLIP-seq library construction. When the single-strand RNA was digested by enzyme, for example <a class="reference external" href="http://en.wikipedia.org/wiki/Micrococcal_nuclease">MNase</a>, the RNA-protein complex is protected from digestion. It does not necessarily means that all the unbound RNA is depleted, in other words there might be certain escaped residues existed flanking the RNA-protein complex.</li>
+</ul>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/c20HMM_rnase.png"><img alt="_images/c20HMM_rnase.png" src="_images/c20HMM_rnase.png" /></a>
+<p class="caption">Scheme from FOX2 CLIP-seq paper <a class="reference internal" href="#yeo2009" id="id7">[Yeo2009]</a> .</p>
+</div>
+<ul class="simple">
+<li>Footprint is one of the binding features of RBP. If the binding clusters are centered by their very position of highest reads, a &#8220;footprint&#8221; of RBP would be observed. It indicates the binding sites are not necessarily precise sites, but more likely a short of regions. With this in mind, there are regions highly associated with RBP binding and others less associated.</li>
+</ul>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/c20HMM_Ago_footprint.png"><img alt="_images/c20HMM_Ago_footprint.png" src="_images/c20HMM_Ago_footprint.png" /></a>
+<p class="caption">Footprint of Ago CLIP-seq paper <a class="reference internal" href="#chi2009" id="id8">[Chi2009]</a> .</p>
+</div>
+<p>Collectively there are regions of RNA could be sequenced within CLIP-seq tags and thus provide evidence to make inference about the non-binding state.</p>
+<p>We could implement the codes to reproduce the results by using <tt class="docutils literal"><span class="pre">RHmm</span></tt> package with the following brief analysis pipeline:</p>
 <ul class="simple">
 <li>Raw data retrieve and munging;</li>
 <li>Construct observed sequence path for each read;</li>
@@ -481,78 +613,85 @@ Model<span class="o">:</span>
 
 Initial probabilities<span class="o">:</span>
        Pi <span class="m">1</span>      Pi <span class="m">2</span>
-  <span class="m">0.3279376</span> <span class="m">0.6720624</span>
+  <span class="m">0.3139217</span> <span class="m">0.6860783</span>
 
 Transition matrix<span class="o">:</span>
           State <span class="m">1</span>   State <span class="m">2</span>
-State <span class="m">1</span> <span class="m">0.8124988</span> <span class="m">0.1875012</span>
-State <span class="m">2</span> <span class="m">0.7279489</span> <span class="m">0.2720511</span>
+State <span class="m">1</span> <span class="m">0.8149683</span> <span class="m">0.1850317</span>
+State <span class="m">2</span> <span class="m">0.7304111</span> <span class="m">0.2695889</span>
 
 Conditionnal distribution parameters<span class="o">:</span>
 
 Distribution parameters<span class="o">:</span>
-                AAA        AAC         AAG         AAU         ACA         ACC
-State <span class="m">1</span> <span class="m">0.002053805</span> <span class="m">0.00171227</span> <span class="m">0.002921558</span> <span class="m">0.004062008</span> <span class="m">0.001702238</span> <span class="m">0.004119598</span>
-State <span class="m">2</span> <span class="m">0.026659666</span> <span class="m">0.02669045</span> <span class="m">0.018581166</span> <span class="m">0.029270826</span> <span class="m">0.024849193</span> <span class="m">0.019070079</span>
-                 ACG         ACU         AGA         AGC         AGG
-State <span class="m">1</span> <span class="m">0.0009545203</span> <span class="m">0.007847316</span> <span class="m">0.003571282</span> <span class="m">0.005141578</span> <span class="m">0.004968771</span>
-State <span class="m">2</span> <span class="m">0.0042811116</span> <span class="m">0.049837123</span> <span class="m">0.016124514</span> <span class="m">0.014469545</span> <span class="m">0.015340024</span>
-                AGU         AUA        AUC         AUG        AUU         CAA
-State <span class="m">1</span> <span class="m">0.007489506</span> <span class="m">0.003924728</span> <span class="m">0.01476462</span> <span class="m">0.005052538</span> <span class="m">0.01347329</span> <span class="m">0.005563721</span>
-State <span class="m">2</span> <span class="m">0.019660018</span> <span class="m">0.015210379</span> <span class="m">0.03463434</span> <span class="m">0.025846413</span> <span class="m">0.04669401</span> <span class="m">0.013701655</span>
-                CAC        CAG        CAU         CCA        CCC          CCG
-State <span class="m">1</span> <span class="m">0.007087994</span> <span class="m">0.01072144</span> <span class="m">0.01785467</span> <span class="m">0.013107710</span> <span class="m">0.01146904</span> <span class="m">0.0036611494</span>
-State <span class="m">2</span> <span class="m">0.020376993</span> <span class="m">0.01442269</span> <span class="m">0.02483846</span> <span class="m">0.003294134</span> <span class="m">0.00473662</span> <span class="m">0.0002132302</span>
-               CCU          CGA          CGC          CGG         CGU
-State <span class="m">1</span> <span class="m">0.03117673</span> <span class="m">0.0013737549</span> <span class="m">0.0027200873</span> <span class="m">4.233660e-03</span> <span class="m">0.005146979</span>
-State <span class="m">2</span> <span class="m">0.02154137</span> <span class="m">0.0007451607</span> <span class="m">0.0002868091</span> <span class="m">1.914924e-05</span> <span class="m">0.001748012</span>
-                CUA        CUC         CUG        CUU         GAA         GAC
-State <span class="m">1</span> <span class="m">0.016619599</span> <span class="m">0.04564824</span> <span class="m">0.044308856</span> <span class="m">0.06249475</span> <span class="m">0.005378598</span> <span class="m">0.003293537</span>
-State <span class="m">2</span> <span class="m">0.008393343</span> <span class="m">0.01467510</span> <span class="m">0.007747943</span> <span class="m">0.01867869</span> <span class="m">0.011986162</span> <span class="m">0.011816205</span>
-                GAG         GAU         GCA         GCC         GCG        GCU
-State <span class="m">1</span> <span class="m">0.005374742</span> <span class="m">0.006428859</span> <span class="m">0.006176074</span> <span class="m">0.007123844</span> <span class="m">0.001613111</span> <span class="m">0.01686248</span>
-State <span class="m">2</span> <span class="m">0.007391663</span> <span class="m">0.013159560</span> <span class="m">0.008755279</span> <span class="m">0.010752949</span> <span class="m">0.001284622</span> <span class="m">0.02543406</span>
-                GGA         GGC         GGG         GGU         GUA        GUC
-State <span class="m">1</span> <span class="m">0.007897306</span> <span class="m">0.008914374</span> <span class="m">0.008259496</span> <span class="m">0.021292694</span> <span class="m">0.008996625</span> <span class="m">0.02168497</span>
-State <span class="m">2</span> <span class="m">0.003091445</span> <span class="m">0.003453484</span> <span class="m">0.002429911</span> <span class="m">0.001723835</span> <span class="m">0.003756899</span> <span class="m">0.02106414</span>
-                GUG        GUU          UAA         UAC          UAG
-State <span class="m">1</span> <span class="m">0.018862773</span> <span class="m">0.02229759</span> <span class="m">0.0008606254</span> <span class="m">0.001296163</span> <span class="m">0.0007859372</span>
-State <span class="m">2</span> <span class="m">0.005962911</span> <span class="m">0.02446250</span> <span class="m">0.0347718127</span> <span class="m">0.042850016</span> <span class="m">0.0336709869</span>
-                UAU         UCA         UCC         UCG        UCU        UGA
-State <span class="m">1</span> <span class="m">0.009279143</span> <span class="m">0.029338790</span> <span class="m">0.033592568</span> <span class="m">0.006527562</span> <span class="m">0.09150535</span> <span class="m">0.01019676</span>
-State <span class="m">2</span> <span class="m">0.053780320</span> <span class="m">0.004609686</span> <span class="m">0.008172366</span> <span class="m">0.000611805</span> <span class="m">0.02612267</span> <span class="m">0.02084916</span>
-               UGC        UGG        UGU         UUA         UUC         UUG
-State <span class="m">1</span> <span class="m">0.01901294</span> <span class="m">0.02669897</span> <span class="m">0.03650746</span> <span class="m">0.017918991</span> <span class="m">0.070980521</span> <span class="m">0.035614819</span>
-State <span class="m">2</span> <span class="m">0.01816547</span> <span class="m">0.00453399</span> <span class="m">0.03746990</span> <span class="m">0.001830695</span> <span class="m">0.005125166</span> <span class="m">0.001564879</span>
-                UUU
-State <span class="m">1</span> <span class="m">0.072478344</span>
-State <span class="m">2</span> <span class="m">0.006707263</span>
+                AAA         AAC         AAG         AAU         ACA
+State <span class="m">1</span> <span class="m">0.002383142</span> <span class="m">0.001988302</span> <span class="m">0.003097821</span> <span class="m">0.004226146</span> <span class="m">0.001995432</span>
+State <span class="m">2</span> <span class="m">0.025786133</span> <span class="m">0.025971278</span> <span class="m">0.018121069</span> <span class="m">0.028874057</span> <span class="m">0.024075226</span>
+                ACC          ACG         ACU         AGA         AGC
+State <span class="m">1</span> <span class="m">0.004296758</span> <span class="m">0.0009777614</span> <span class="m">0.008180572</span> <span class="m">0.003830718</span> <span class="m">0.005312564</span>
+State <span class="m">2</span> <span class="m">0.018605290</span> <span class="m">0.0042242069</span> <span class="m">0.049004140</span> <span class="m">0.015416027</span> <span class="m">0.014005746</span>
+                AGG         AGU         AUA        AUC         AUG        AUU
+State <span class="m">1</span> <span class="m">0.005096352</span> <span class="m">0.007593413</span> <span class="m">0.004129317</span> <span class="m">0.01496485</span> <span class="m">0.005350854</span> <span class="m">0.01376565</span>
+State <span class="m">2</span> <span class="m">0.015004130</span> <span class="m">0.019397553</span> <span class="m">0.014655807</span> <span class="m">0.03411788</span> <span class="m">0.025050705</span> <span class="m">0.04595246</span>
+                CAA         CAC        CAG        CAU         CCA         CCC
+State <span class="m">1</span> <span class="m">0.005554373</span> <span class="m">0.007190527</span> <span class="m">0.01082647</span> <span class="m">0.01789752</span> <span class="m">0.012993299</span> <span class="m">0.011660492</span>
+State <span class="m">2</span> <span class="m">0.013752790</span> <span class="m">0.020121812</span> <span class="m">0.01413175</span> <span class="m">0.02473606</span> <span class="m">0.003593826</span> <span class="m">0.004166092</span>
+                CCG        CCU          CGA          CGC          CGG
+State <span class="m">1</span> <span class="m">0.003661999</span> <span class="m">0.03098681</span> <span class="m">0.0013783022</span> <span class="m">0.0024944800</span> <span class="m">4.214447e-03</span>
+State <span class="m">2</span> <span class="m">0.000200509</span> <span class="m">0.02205868</span> <span class="m">0.0007302127</span> <span class="m">0.0009282014</span> <span class="m">6.182563e-05</span>
+                CGU         CUA        CUC         CUG        CUU         GAA
+State <span class="m">1</span> <span class="m">0.005119809</span> <span class="m">0.016649674</span> <span class="m">0.04569612</span> <span class="m">0.043974551</span> <span class="m">0.06312030</span> <span class="m">0.005524635</span>
+State <span class="m">2</span> <span class="m">0.001815995</span> <span class="m">0.008282352</span> <span class="m">0.01444509</span> <span class="m">0.008600124</span> <span class="m">0.01674955</span> <span class="m">0.011585987</span>
+                GAC         GAG         GAU         GCA         GCC
+State <span class="m">1</span> <span class="m">0.003385939</span> <span class="m">0.005436000</span> <span class="m">0.006501759</span> <span class="m">0.006188076</span> <span class="m">0.007126983</span>
+State <span class="m">2</span> <span class="m">0.011575944</span> <span class="m">0.007221552</span> <span class="m">0.012970029</span> <span class="m">0.008728458</span> <span class="m">0.010754741</span>
+                GCG        GCU         GGA         GGC         GGG         GGU
+State <span class="m">1</span> <span class="m">0.001602458</span> <span class="m">0.01690951</span> <span class="m">0.007828274</span> <span class="m">0.008870517</span> <span class="m">0.008232480</span> <span class="m">0.020662642</span>
+State <span class="m">2</span> <span class="m">0.001314269</span> <span class="m">0.02532439</span> <span class="m">0.003275595</span> <span class="m">0.003563300</span> <span class="m">0.002490208</span> <span class="m">0.003476972</span>
+                GUA        GUC         GUG        GUU          UAA         UAC
+State <span class="m">1</span> <span class="m">0.008955899</span> <span class="m">0.02164476</span> <span class="m">0.018687619</span> <span class="m">0.02221290</span> <span class="m">0.0002625711</span> <span class="m">0.002043933</span>
+State <span class="m">2</span> <span class="m">0.003858372</span> <span class="m">0.02117789</span> <span class="m">0.006428045</span> <span class="m">0.02471246</span> <span class="m">0.0365923675</span> <span class="m">0.040823962</span>
+                UAG         UAU         UCA         UCC          UCG
+State <span class="m">1</span> <span class="m">0.001035275</span> <span class="m">0.009639421</span> <span class="m">0.029376269</span> <span class="m">0.033462720</span> <span class="m">0.0066478156</span>
+State <span class="m">2</span> <span class="m">0.033052139</span> <span class="m">0.052877132</span> <span class="m">0.004428215</span> <span class="m">0.008469919</span> <span class="m">0.0002484275</span>
+               UCU        UGA        UGC         UGG        UGU         UUA
+State <span class="m">1</span> <span class="m">0.09058445</span> <span class="m">0.01043319</span> <span class="m">0.01899602</span> <span class="m">0.026031526</span> <span class="m">0.03641284</span> <span class="m">0.017888266</span>
+State <span class="m">2</span> <span class="m">0.02857544</span> <span class="m">0.02020113</span> <span class="m">0.01821159</span> <span class="m">0.006386885</span> <span class="m">0.03774479</span> <span class="m">0.001871079</span>
+                UUC        UUG         UUU
+State <span class="m">1</span> <span class="m">0.069744980</span> <span class="m">0.03439432</span> <span class="m">0.072667103</span>
+State <span class="m">2</span> <span class="m">0.008481177</span> <span class="m">0.00497244</span> <span class="m">0.005968508</span>
 </pre></div>
 </div>
-<p><span class="underline">Visualization</span>.</p>
+<p><span class="underline">Visualization</span>. Since human eyes are more sensitive to changes in horizontal length, I prefer to putting emission probabilities at the x-axis and also the triplet sequence in the y-axis so that you don&#8217;t need to twist you head.</p>
 <div class="highlight-r"><div class="highlight"><pre><span class="c1">## -----------------------------</span>
 <span class="c1">## Visualize PTB HMM</span>
 <span class="c1">## -----------------------------</span>
-ptb.HMM.emisMx.order <span class="o">&lt;-</span> ptb.HMM.emisMx<span class="p">[,</span> order<span class="p">(</span>ptb.HMM.emisMx<span class="p">[</span><span class="m">1</span><span class="p">,</span> <span class="p">])]</span>
+ptb.HMM.emisMx.order <span class="o">&lt;-</span> ptb.HMM.emisMx<span class="p">[,</span> order<span class="p">(</span>ptb.HMM.emisMx<span class="p">[</span><span class="m">1</span><span class="p">,</span> <span class="p">],</span> decreasing<span class="o">=</span><span class="k-Variable">F</span><span class="p">)]</span>
 library<span class="p">(</span>reshape2<span class="p">)</span>
 ptb.HMM.emisMx.order <span class="o">&lt;-</span> as.data.frame<span class="p">(</span>ptb.HMM.emisMx.order<span class="p">)</span>
 ptb.HMM.emisMx.order<span class="o">$</span>State <span class="o">&lt;-</span> row.names<span class="p">(</span>ptb.HMM.emisMx.order<span class="p">)</span>
 ptb.HMM.emisMx.order.melt <span class="o">&lt;-</span> melt<span class="p">(</span>ptb.HMM.emisMx.order<span class="p">,</span> id.vars <span class="o">=</span> <span class="s">&quot;State&quot;</span><span class="p">)</span>
-
 p <span class="o">&lt;-</span> ggplot<span class="p">(</span>data <span class="o">=</span> ptb.HMM.emisMx.order.melt<span class="p">,</span> 
        aes<span class="p">(</span>x <span class="o">=</span> variable<span class="p">,</span> y <span class="o">=</span> value<span class="p">,</span> fill <span class="o">=</span> State<span class="p">))</span> <span class="o">+</span> 
-    geom_bar<span class="p">(</span>stat<span class="o">=</span><span class="s">&quot;identity&quot;</span><span class="p">,</span> position<span class="o">=</span>position_dodge<span class="p">())</span> <span class="o">+</span>
+    geom_bar<span class="p">(</span>stat<span class="o">=</span><span class="s">&quot;identity&quot;</span><span class="p">,</span> position<span class="o">=</span>position_dodge<span class="p">())</span> <span class="o">+</span> coord_flip<span class="p">()</span> <span class="o">+</span> 
     theme_bw<span class="p">()</span> <span class="o">+</span> 
     theme<span class="p">(</span>text <span class="o">=</span> element_text<span class="p">(</span>family <span class="o">=</span> <span class="s">&quot;xkcd&quot;</span><span class="p">,</span> size <span class="o">=</span> <span class="m">20</span><span class="p">),</span> 
           axis.text.x <span class="o">=</span> element_text<span class="p">(</span>angle <span class="o">=</span> <span class="m">90</span><span class="p">,</span> hjust <span class="o">=</span> <span class="m">1</span><span class="p">),</span> 
           legend.justification <span class="o">=</span> c<span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">),</span> 
-          legend.position<span class="o">=</span>c<span class="p">(</span><span class="m">0.9</span><span class="p">,</span> <span class="m">0.7</span><span class="p">))</span> <span class="o">+</span> 
-    xlab<span class="p">(</span><span class="s">&quot;Triplet&quot;</span><span class="p">)</span> <span class="o">+</span> ylab<span class="p">(</span><span class="s">&quot;Emission Prob&quot;</span><span class="p">)</span>  
+          legend.position<span class="o">=</span>c<span class="p">(</span><span class="m">0.6</span><span class="p">,</span> <span class="m">0.7</span><span class="p">))</span> <span class="o">+</span> 
+    xlab<span class="p">(</span><span class="s">&quot;Triplet&quot;</span><span class="p">)</span> <span class="o">+</span> ylab<span class="p">(</span><span class="s">&quot;Emission Prob&quot;</span><span class="p">)</span> 
 </pre></div>
 </div>
 <div class="figure align-center">
-<a class="reference internal image-reference" href="_images/c20_PTB_estimated_emis.png"><img alt="_images/c20_PTB_estimated_emis.png" src="_images/c20_PTB_estimated_emis.png" /></a>
+<a class="reference internal image-reference" href="_images/c20_PTB_estimated_emis_trial2_flip.png"><img alt="_images/c20_PTB_estimated_emis_trial2_flip.png" src="_images/c20_PTB_estimated_emis_trial2_flip.png" style="width: 600px;" /></a>
 </div>
+<p><span class="underline">Short Discussion</span>. My emission probabilities plot is consistent with the published figure. CU-rich motifs are ranked in the top in both results. But I would guess that maybe there is typo error denoting the transition probabilities in the paper: <span class="math">\(\mathbf{P}\left(state2 \Rightarrow state1\right)\)</span> and <span class="math">\(\mathbf{P}\left(state2 \Rightarrow state2\right)\)</span> should be exchanged. It makes clear sense under State 1. Think in HMM again. <span class="math">\(\mathbf{P}\left(state1 \Rightarrow state1\right)\)</span> is larger than <span class="math">\(\mathbf{P}\left(state1 \Rightarrow state2\right)\)</span> so that under State 1 it would more likely stick with State 1 rather change to State 2. It is consistent to  the big presumption that CLIP-seq sequenced reads are highly associated with RBP binding with tolerance of some minor non-binding regions. If <span class="math">\(\mathbf{P}\left(state2 \Rightarrow state1\right)\)</span>  were 0.78 and <span class="math">\(\mathbf{P}\left(state2 \Rightarrow state2\right)\)</span> were 0.22, State 2 would prefer sticking to itself as well and the principle of CLIP-seq technology would be violated badly.</p>
+<p>My transition probabilities matrix:</p>
+<div class="highlight-bash"><div class="highlight"><pre>  State 1   State 2
+State 1 0.8149683 0.1850317
+State 2 0.7304111 0.2695889
+</pre></div>
+</div>
+<p>On State 1 our results are similar to published paper with in mind that different initial value would lead to different outcome. On the other hand, the pattern of State 2 is opposite.</p>
 </div>
 </div>
 </div>
@@ -567,6 +706,18 @@ p <span class="o">&lt;-</span> ggplot<span class="p">(</span>data <span class="o
 </div>
 <div class="section" id="references">
 <h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<table class="docutils citation" frame="void" id="chi2009" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id8">[Chi2009]</a></td><td>Chi, Sung Wook, et al. &#8220;Argonaute HITS-CLIP decodes microRNA–mRNA interaction maps.&#8221; Nature 460.7254 (2009): 479-486.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="yeo2009" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id7">[Yeo2009]</a></td><td>Yeo, Gene W., et al. &#8220;An RNA code for the FOX2 splicing regulator revealed by mapping RNA-protein interactions in stem cells.&#8221; Nature structural &amp; molecular biology 16.2 (2009): 130-137.</td></tr>
+</tbody>
+</table>
 <table class="docutils citation" frame="void" id="eddy2004" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
@@ -576,13 +727,13 @@ p <span class="o">&lt;-</span> ggplot<span class="p">(</span>data <span class="o
 <table class="docutils citation" frame="void" id="zhang2013" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[Zhang2013]</a></td><td>Zhang, Chaolin, et al. &#8220;Prediction of clustered RNA-binding protein motif sites in the mammalian genome.&#8221; Nucleic acids research 41.14 (2013): 6793-6807.</td></tr>
+<tr><td class="label">[Zhang2013]</td><td><em>(<a class="fn-backref" href="#id3">1</a>, <a class="fn-backref" href="#id6">2</a>)</em> Zhang, Chaolin, et al. &#8220;Prediction of clustered RNA-binding protein motif sites in the mammalian genome.&#8221; Nucleic acids research 41.14 (2013): 6793-6807.</td></tr>
 </tbody>
 </table>
 <table class="docutils citation" frame="void" id="han2014" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label">[Han2014]</td><td><em>(<a class="fn-backref" href="#id3">1</a>, <a class="fn-backref" href="#id5">2</a>)</em> Han, Areum, et al. &#8220;De Novo Prediction of PTBP1 Binding and Splicing Targets Reveals Unexpected Features of Its RNA Recognition and Function.&#8221; PLOS Computational Biology 10.1 (2014).</td></tr>
+<tr><td class="label">[Han2014]</td><td><em>(<a class="fn-backref" href="#id2">1</a>, <a class="fn-backref" href="#id5">2</a>)</em> Han, Areum, et al. &#8220;De Novo Prediction of PTBP1 Binding and Splicing Targets Reveals Unexpected Features of Its RNA Recognition and Function.&#8221; PLOS Computational Biology 10.1 (2014).</td></tr>
 </tbody>
 </table>
 </div>
