@@ -196,7 +196,7 @@ ptb.peak.GRobj <- GRanges(seqnames = Rle(as.character(ptb.peak[, 1])),
 ptb.peak.seq <- getSeq(hg18.genome, seqnames(ptb.peak.GRobj), 
                        start(ptb.peak.GRobj), 
                        end(ptb.peak.GRobj)) ## raw genome seq
-ptb.peak.seq[neg.indices] <- reverseComplement(ptb.peak.rna[neg.indices]) ## transcript sequence 
+ptb.peak.seq[neg.indices] <- reverseComplement(ptb.peak.seq[neg.indices]) ## transcript sequence 
 
 ## Cook to observations
 library("plyr")

@@ -434,7 +434,7 @@ As a result we have estimated the parameters of HMM modeling PTB binding prefere
     :language: r
 
 .. figure:: _static/c20_PTB_estimated_emis_trial2_flip.png
-	:width: 600
+	:scale: 50 %
 	:align: center
 
 :underline:`Short Discussion`. My emission probabilities plot is consistent with the published figure. CU-rich motifs are ranked in the top in both results. But I would guess that maybe there is typo error denoting the transition probabilities in the paper: :math:`\mathbf{P}\left(state2 \Rightarrow state1\right)` and :math:`\mathbf{P}\left(state2 \Rightarrow state2\right)` should be exchanged. It makes clear sense under State 1. Think in HMM again. :math:`\mathbf{P}\left(state1 \Rightarrow state1\right)` is larger than :math:`\mathbf{P}\left(state1 \Rightarrow state2\right)` so that under State 1 it would more likely stick with State 1 rather change to State 2. It is consistent to  the big presumption that CLIP-seq sequenced reads are highly associated with RBP binding with tolerance of some minor non-binding regions. If :math:`\mathbf{P}\left(state2 \Rightarrow state1\right)`  were 0.78 and :math:`\mathbf{P}\left(state2 \Rightarrow state2\right)` were 0.22, State 2 would prefer sticking to itself as well and the principle of CLIP-seq technology would be violated badly. 
