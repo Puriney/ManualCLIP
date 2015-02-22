@@ -27,7 +27,7 @@ neg.indices <- which(ptb.peak[, 6] == "-")
 ## Fetch CLIP-seq Cluster Sequence
 library("GenomicRanges")
 ptb.peak.GRobj <- GRanges(seqnames = Rle(as.character(ptb.peak[, 1])), 
-                          ranges = IRanges(ptb.peak[, 2], 
+                          ranges = IRanges(ptb.peak[, 2] + 1, #0-based to 1-based 
                                            ptb.peak[, 3],
                                            names = ptb.peak[, 4]), 
                           strand = Rle(ptb.peak[, 6]))
